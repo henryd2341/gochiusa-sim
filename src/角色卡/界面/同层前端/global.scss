@@ -1,0 +1,540 @@
+// ============================================
+// global.scss - Global Styles for Layered Frontend
+// ============================================
+
+// Import Google Fonts
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+
+// ============================================
+// CSS Variables
+// ============================================
+:root {
+  // Character Colors
+  --clr-cocoa: #f5b0b6;
+  --clr-chino: #8ab7eb;
+  --clr-rize: #ae96d8;
+  --clr-chiya: #87ce87;
+  --clr-syaro: #f5d36e;
+  --clr-maya: #7dd4df;
+  --clr-megu: #f7a699;
+  --clr-fuyu: #8d8fd6;
+  --clr-yura: #e58ec4;
+  --clr-natsume: #ce67e8;
+  --clr-eru: #faa548;
+  --clr-aoyama: #4778d1;
+  --clr-mate: #4bafd7;
+  --clr-mocha: #b7df69;
+
+  // Default Theme (Warm)
+  --primary-bg: #faf8f5;
+  --secondary-bg: #f5f0e8;
+  --accent-color: #d4a574;
+  --text-primary: #4a4a4a;
+  --text-secondary: #7a7a7a;
+  --text-muted: #9a9a9a;
+  --border-color: #e8e0d5;
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --card-shadow: rgba(0, 0, 0, 0.08);
+  --overlay-bg: rgba(0, 0, 0, 0.5);
+
+  // Decorative Colors
+  --decor-gold: #c9a86c;
+  --decor-rose: #e8c4c4;
+  --decor-lavender: #d4c4e8;
+
+  // Typography
+  --font-primary: 'Noto Serif SC', 'Source Han Serif CN', serif;
+  --font-heading: 'Noto Serif SC', serif;
+  --font-ui: 'Noto Sans SC', 'Source Han Sans CN', sans-serif;
+  --font-decor: 'Playfair Display', serif;
+
+  // Font Sizes
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 2rem;
+
+  // Spacing
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+
+  // Border Radius
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  // Transitions
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 400ms ease;
+
+  // Z-Index Scale
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 300;
+  --z-toast: 400;
+}
+
+// ============================================
+// Theme Variants
+// ============================================
+[data-theme='cool'] {
+  --primary-bg: #f0f4f8;
+  --secondary-bg: #e8f0f8;
+  --accent-color: #6b8cae;
+  --text-primary: #3a4a5a;
+  --text-secondary: #6a7a8a;
+  --text-muted: #8a9a9a;
+  --border-color: #d0dce8;
+  --card-bg: rgba(255, 255, 255, 0.95);
+  --card-shadow: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme='high-contrast'] {
+  --primary-bg: #ffffff;
+  --secondary-bg: #f5f5f5;
+  --accent-color: #1a1a1a;
+  --text-primary: #000000;
+  --text-secondary: #333333;
+  --text-muted: #666666;
+  --border-color: #cccccc;
+  --card-bg: #ffffff;
+  --card-shadow: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme='eye-care'] {
+  --primary-bg: #f5f0e6;
+  --secondary-bg: #ebe5d9;
+  --accent-color: #8b7355;
+  --text-primary: #5a4a3a;
+  --text-secondary: #7a6a5a;
+  --text-muted: #9a8a7a;
+  --border-color: #d5cfc3;
+  --card-bg: rgba(250, 245, 235, 0.95);
+  --card-shadow: rgba(0, 0, 0, 0.05);
+}
+
+// ============================================
+// Font Scheme Variants
+// ============================================
+[data-font='reading'] {
+  --font-primary: 'LXGW WenKai', 'Noto Serif SC', serif;
+}
+
+[data-font='artistic'] {
+  --font-primary: 'ZCOOL QingKe HuangYou', 'Noto Serif SC', serif;
+}
+
+// ============================================
+// Font Size Variants
+// ============================================
+[data-font-size='small'] {
+  --font-size-base: 0.875rem;
+  --font-size-sm: 0.75rem;
+  --font-size-lg: 1rem;
+}
+
+[data-font-size='large'] {
+  --font-size-base: 1.125rem;
+  --font-size-sm: 1rem;
+  --font-size-lg: 1.25rem;
+}
+
+// ============================================
+// Base Reset
+// ============================================
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-primary);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  color: var(--text-primary);
+  background-color: var(--primary-bg);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+// ============================================
+// Typography
+// ============================================
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-primary);
+}
+
+h1 {
+  font-size: var(--font-size-3xl);
+}
+
+h2 {
+  font-size: var(--font-size-2xl);
+}
+
+h3 {
+  font-size: var(--font-size-xl);
+}
+
+p {
+  margin-bottom: var(--spacing-md);
+}
+
+a {
+  color: var(--accent-color);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+
+  &:hover {
+    color: var(--text-primary);
+  }
+}
+
+// ============================================
+// Utility Classes
+// ============================================
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.font-ui {
+  font-family: var(--font-ui);
+}
+
+.font-primary {
+  font-family: var(--font-primary);
+}
+
+// ============================================
+// Animation Keyframes
+// ============================================
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+@keyframes typewriter {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+// ============================================
+// Animation Classes
+// ============================================
+.animate-fadeIn {
+  animation: fadeIn var(--transition-normal) ease forwards;
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp var(--transition-slow) ease forwards;
+}
+
+.animate-fadeInDown {
+  animation: fadeInDown var(--transition-slow) ease forwards;
+}
+
+.animate-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-breathe {
+  animation: breathe 4s ease-in-out infinite;
+}
+
+// ============================================
+// Scrollbar Styling
+// ============================================
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--secondary-bg);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: var(--radius-full);
+
+  &:hover {
+    background: var(--text-muted);
+  }
+}
+
+// ============================================
+// Selection Styling
+// ============================================
+::selection {
+  background: var(--accent-color);
+  color: white;
+}
+
+// ============================================
+// Focus Styling
+// ============================================
+:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+// ============================================
+// Button Base
+// ============================================
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-family: var(--font-ui);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  cursor: pointer;
+  user-select: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.btn-primary {
+  background-color: var(--accent-color);
+  color: white;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.1);
+  }
+
+  &:active:not(:disabled) {
+    filter: brightness(0.95);
+  }
+}
+
+.btn-secondary {
+  background-color: var(--secondary-bg);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+
+  &:hover:not(:disabled) {
+    background-color: var(--border-color);
+  }
+}
+
+.btn-ghost {
+  background-color: transparent;
+  color: var(--text-secondary);
+
+  &:hover:not(:disabled) {
+    background-color: var(--secondary-bg);
+    color: var(--text-primary);
+  }
+}
+
+// ============================================
+// Card Base
+// ============================================
+.card {
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 12px var(--card-shadow);
+  overflow: hidden;
+}
+
+// ============================================
+// Modal Base
+// ============================================
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  animation: fadeIn var(--transition-fast) ease;
+}
+
+.modal-content {
+  background: var(--card-bg);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+  animation: fadeInUp var(--transition-normal) ease;
+}
+
+// ============================================
+// Responsive Utilities
+// ============================================
+@media (max-width: 767px) {
+  :root {
+    --font-size-base: 0.9375rem;
+    --spacing-lg: 1.25rem;
+    --spacing-xl: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --font-size-base: 1.0625rem;
+  }
+}
+
+// ============================================
+// Print Styles
+// ============================================
+@media print {
+  body {
+    background: white;
+    color: black;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
