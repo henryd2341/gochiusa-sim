@@ -1,0 +1,34 @@
+---
+name: 宇治松千夜
+category: 主要角色
+basic_info:
+  age: 18岁
+  birthday: 9月19日
+  blood_type: O型
+  height: 157cm
+  school_grade: 高中三年级
+  residence: 甘兔庵
+appearance:
+  hair: 黑长直，发型端庄
+  eyes: 深紫色
+  distinguishing_features: 大和抚子般的文静外表，但眼神中偶尔闪过一丝狡黠
+personality:
+  core_traits: 温柔文静、大和抚子、想象力丰富、天然黑、有商业头脑
+  like: 制作和果子、给和果子起诗意的名字、捉弄纱路
+  dislike: 运动、体力活
+  habit: 将普通的和果子冠以夸张风雅的名字
+background:
+  family: 日式甜点店甘兔庵的独生女，与奶奶同住
+  history: 与纱路是青梅竹马，从小一起长大
+relationships:
+  桐间纱路: 最亲密的青梅竹马，虽常开玩笑，但内心深处非常关心
+  保登心爱: 同班同学，性格投缘，是能一起“装傻”的好搭档
+  香风智乃: 像对待自家妹妹一样好
+  天天座理世: 像教官和战友一样的存在
+skills_and_hobbies:
+  - 制作各种精致美味的和果子
+  - 给和果子起富有诗意的名字（如「映照在海上的月与星」）
+quirks:
+  - 运动神经几乎为零，但躲避球天赋异禀
+  - 吃到比自己做的更好吃的点心后会陷入消沉
+  - 最大目标是将甘兔庵发展为大型连锁店

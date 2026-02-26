@@ -1,0 +1,18 @@
+---
+name: 豆馅
+category: 兔子
+basic_info:
+  species: 长耳兔
+  residence: 甘兔庵
+  gender: 雄性
+appearance:
+  fur: 黑色，嘴部白色
+  distinguishing_features: 总是安静地待在甘兔庵的某个角落，几乎不动
+personality:
+  core_traits: 极度安静、害羞
+relationships:
+  提比: 对来到甘兔庵的提比一见钟情，发情时会引发追逐战
+  桐间纱路: 喜欢咬纱路（导致纱路害怕兔子的主要原因）
+  野雁: 争抢提比的对手
+quirks:
+  - 偶尔会被乌鸦叼到天上，但掉下来时总会落在食物上，非常幸运

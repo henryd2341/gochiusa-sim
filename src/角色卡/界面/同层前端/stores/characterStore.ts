@@ -6,20 +6,20 @@ import { Schema } from '../../../schema';
 
 // 角色名称映射（中文名 -> 英文文件名）
 export const CHARACTER_NAME_MAP: Record<string, string> = {
-  保登心爱: 'cocoa',
-  香风智乃: 'chino',
-  天天座理世: 'rize',
-  宇治松千夜: 'chiya',
-  桐间纱路: 'syaro',
-  条河麻耶: 'maya',
-  奈津惠: 'megu',
-  风衣叶冬优: 'fuyu',
-  神沙夏明: 'natsume',
-  神沙映月: 'eru',
-  狩手结良: 'yura',
-  青山蓝山: 'aoyama',
-  真手凛: 'mate',
-  保登摩卡: 'mocha',
+  保登心爱: 'qjltca',
+  香风智乃: '6t09pw',
+  天天座理世: 'n9szhx',
+  宇治松千夜: 'v4spnt',
+  桐间纱路: 'b982xz',
+  条河麻耶: 'bmw44n',
+  奈津惠: 'koovsy',
+  风衣叶冬优: 'lckv74',
+  神沙夏明: 'usclrp',
+  神沙映月: 'r10sh1',
+  狩手结良: 'a3uv0i',
+  青山蓝山: 'x18i00',
+  真手凛: 'kk59ir',
+  保登摩卡: 'hi872c',
 };
 
 // 角色颜色映射
@@ -53,7 +53,7 @@ export function getCharacterPortrait(name: string): string {
   const fileName = CHARACTER_NAME_MAP[name];
   if (fileName) {
     // 使用相对路径指向 assets/portraits
-    return `../assets/portraits/${fileName}.png`;
+    return `https://files.catbox.moe/${fileName}.png`;
   }
   return '';
 }

@@ -1,0 +1,60 @@
+---
+characters:
+  - name: 保登千代子
+    identity: 心爱的母亲
+    appearance: 玫瑰金色长发，紫色瞳孔，与心爱相似的容貌但更成熟
+    personality: 虽是四个孩子的母亲，却有着不科学的童颜和童心
+    background: 高中时代与香风咲是同校好友，被咲称为“巧克酱”；与摩卡共同经营保登面包房
+    relationship: 将心爱送到Rabbit House寄宿，希望给故友的女儿带去温暖
+
+  - name: 保登心爱的父亲
+    identity: 心爱的父亲
+    appearance: 佩戴眼镜，文质彬彬
+    personality: 开起玩笑来毫不含糊，吃饭会从甜点开始吃
+    background: 大学教授，在“百桥闪耀之都”工作
+
+  - name: 保登圭
+    identity: 心爱的大哥
+    occupation: 研究员
+    note: 心爱小时候曾拜托他与自己一同数质数
+
+  - name: 保登树
+    identity: 心爱的二哥
+    occupation: 律师
+    note: 心爱小时候曾拜托他读《六法全书》给自己听
+
+  - name: 理世的父亲
+    appearance: 左眼戴眼罩，常穿绛红色西装
+    personality: 不善表达情感但关心女儿，喜欢恶作剧
+    background: 有军队背景，与香风隆宏是战友和挚友；曾与隆宏夫妇一起演奏爵士乐
+    relationship: 介绍理世到Rabbit House打工
+
+  - name: 理世的母亲
+    status: 因某种原因与理世分居
+
+  - name: 理世父亲的部下们
+    appearance: 清一色黑色西装、墨镜，具黑社会气质
+    personality: 面对理世朋友们时彬彬有礼
+    occupation: 理世家宅邸的安保人员
+
+  - name: 千夜的奶奶
+    identity: 甘兔庵店主
+    appearance: 草绿色和服，外罩白色围裙
+    personality: 傲娇、刀子嘴豆腐心
+    skills: 擅长做和果子，也是吹箭名人
+    background: 曾与智乃爷爷的Rabbit House合作推出过咖啡系列甜品
+
+  - name: 宇治松千鸟
+    identity: 千夜的母亲
+    occupation: 奔波在世界各地的采购员
+    relationship: 与纱路的母亲是朋友
+
+  - name: 纱路的母亲
+    occupation: 陶器匠人
+    background: 与丈夫在大都市经营陶器店，甘兔庵的餐具由他们提供
+    relationship: 纱路私下喜欢对她撒娇
+
+  - name: 小惠的母亲
+    occupation: 芭蕾舞老师
+    appearance: 与小惠相似的三文鱼粉色卷发
+    background: 高中时就读大小姐高中
