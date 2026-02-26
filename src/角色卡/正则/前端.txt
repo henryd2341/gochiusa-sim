@@ -1,5 +1,5 @@
 <body>
   <script>
-    $('body').load('')
+$('body').load('https://testingcf.jsdelivr.net/gh/henryd2341/gochiusa-sim/dist/角色卡/界面/同层前端/index.html')
   </script>
 </body>
