@@ -1,0 +1,20 @@
+---
+name: 野雁
+category: 兔子
+basic_info:
+  species: 野兔
+  residence: 纱路的家（有自己的纸箱小屋）
+  other_names: 不良野兔
+appearance:
+  fur: 灰色
+  distinguishing_features: 右眼处有一道十字伤疤，眼神凶恶，嘴里总是叼着一根杂草
+personality:
+  core_traits: 外表凶恶的不良、重情重义、傲娇
+background:
+  history: 曾是镇上的流浪野兔，经常堵住纱路的路，后被纱路收留
+relationships:
+  桐间纱路: 最初是骚扰与被骚扰的关系，被收留后成为纱路的房客和守护者
+  豆馅: 争抢提比的对手
+quirks:
+  - 会吃胡萝卜（是三只主要兔子中唯一吃胡萝卜的）
+  - 懂得“江湖义气”，行为举止很像不良少年

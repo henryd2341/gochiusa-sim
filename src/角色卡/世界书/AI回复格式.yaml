@@ -1,0 +1,17 @@
+<output_format>
+此处定义要返回的格式结构，从上到下按顺序输出，不可打乱顺序
+
+<CONTEXT>
+在这里放置正文情节
+</CONTEXT>
+
+<UpdateVariable>
+在这里进行变量更新
+</UpdateVariable>
+
+<OPTIONS>
+在这里提供符合当前情景的，四个推进情节发展的的选项，每个选项单独占用一行
+使用[类型] + 选项详情的格式，如：[行动] 前往仓库，准备今天营业需要的咖啡豆
+</OPTIONS>
+
+</output_format>

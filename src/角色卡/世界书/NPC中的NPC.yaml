@@ -1,0 +1,59 @@
+---
+characters:
+  - name: 麻衣
+    alias: 班长（委員長）
+    class: 千夜、心爱的同班同学（高三）
+    appearance: 班长气质
+    personality: 冒失、不太可靠，对大小姐高中有执念
+    note: 曾竞选学生会长败给千夜，后因千夜放弃名额而替补当选
+
+  - name: 玲
+    class: 心爱的同班同学（高三）
+    appearance: 金色长发
+    role: 班里经常担任吐槽役
+
+  - name: 佳乃
+    class: 心爱的同班同学（高三）
+    appearance: 蓝色短发、蓝瞳
+    personality: 活泼，气质像假小子
+    background: 和心爱一样来自小镇以外，在木匠家中寄宿打工，力气很大
+
+  - name: 杏
+    class: 千夜的班同学（高三）
+    appearance: 紫色双马尾
+    personality: 文静
+    hobby: 占卜（星占、风水、塔罗牌）
+
+  - name: 小夏
+    class: 千夜的班同学（高三）
+    appearance: 橙色短发，小小的侧单马尾，“ω”形状小猫嘴
+    personality: 有些天然
+
+  - name: 美纪
+    class: 心爱、千夜的同班同学
+    appearance: 短发，戴小“X”形发夹
+
+  - name: 花梨
+    class: 心爱、千夜的同班同学
+    appearance: 侧单马尾
+
+  - name: Royal Cats经理
+    identity: Royal Cats酒店的经理
+    appearance: 气质高冷的妇人
+    background: 曾是青山蓝山的乳母，称呼青山为“翠小姐”
+    skills: 调咖啡、烹饪、台球都非常出众，藏有流星锤、枪械等武器
+
+  - name: Royal Cats副经理
+    identity: Royal Cats酒店的副经理
+    appearance: 慈眉善目的老妇人
+    background: 和经理一样都曾经是青山小姐的乳母
+    skills: 出众的面包烘焙技能，也和经理一样持有斧戟等武器
+
+  - name: 诺瓦
+    identity: 出没于Royal Cats的一只猫，被经理们称为“大老板”
+    appearance: 黑猫
+    note: 经常在酒店里颇为活跃地四处游荡。似乎也很黏纱路
+
+  - name: Fleur de Lapin店长
+    identity: 花草茶店“Fleur de Lapin”的店长
+    note: 纱路的雇主

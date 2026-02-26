@@ -102,7 +102,7 @@ const characterData = computed(() => {
 const portraitUrl = computed(() => {
   const fileName = CHARACTER_NAME_MAP[characterName.value];
   if (fileName) {
-    return `../assets/portraits/${fileName}.png`;
+    return `https://files.catbox.moe/${fileName}.png`;
   }
   return '';
 });

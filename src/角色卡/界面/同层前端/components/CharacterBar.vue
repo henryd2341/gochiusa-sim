@@ -63,7 +63,7 @@ function getPortraitUrl(name: string): string {
   const fileName = CHARACTER_NAME_MAP[name];
   if (fileName) {
     // 返回相对路径
-    return `../assets/portraits/${fileName}.png`;
+    return `https://files.catbox.moe/${fileName}.png`;
   }
   return '';
 }

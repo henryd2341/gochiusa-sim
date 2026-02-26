@@ -1,0 +1,27 @@
+---
+name: 真手凛
+category: 重要配角
+basic_info:
+  birthday: 5月4日
+  blood_type: A型
+  height: 159cm
+  occupation: 小说编辑
+appearance:
+  hair: 蓝黑色短发
+  eyes: 黄绿色
+  distinguishing_features: 总是处于搜寻青山蓝山的状态
+personality:
+  core_traits: 认真负责、傲娇、偶尔不靠谱
+  like: 青山蓝山（追随者）
+  dislike: 拖稿
+  habit: 搜寻青山老师时不断抱怨；被问及与青山的关系时会害羞语无伦次
+background:
+  history: 青山蓝山在高中时期的学妹，因相遇而人生道路得以开拓。现任青山蓝山的责任编辑
+relationships:
+  青山蓝山: 前辈、好友、催稿对象，自称能和青山产生心灵感应
+skills_and_hobbies:
+  - 捉摸人的心情
+quirks:
+  - 不适应咖啡口感，但喜欢智乃推出的奶油拉花拿铁
+  - 捉迷藏时会因各种失误显得不靠谱
+  - 高中时期是本地大小姐学校的优待生

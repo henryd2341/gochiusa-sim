@@ -1,0 +1,36 @@
+---
+name: 桐间纱路
+category: 主要角色
+basic_info:
+  age: 18岁
+  birthday: 7月15日
+  blood_type: A型
+  height: 151cm
+  school_grade: 高中三年级
+  residence: 仓库改建的家中（甘兔庵旁）
+appearance:
+  hair: 金色卷发
+  eyes: 绿色
+  distinguishing_features: 优雅的金色卷发和大小姐气质，实际居住环境简陋
+personality:
+  core_traits: 傲娇、容易害羞、努力家、贫穷大小姐
+  like: 理世学姐、花草茶、优雅的生活
+  dislike: 被发现自己贫穷的事实、兔子（最初）、妖怪
+  habit: 喝咖啡会醉，醉后性格变得冒失且会失忆
+background:
+  family: 父母去外地打工，独自一人生活
+  history: 凭借优异成绩被大小姐学校招为特招生，为维持生计在Fleur de Lapin等多处打工
+relationships:
+  宇治松千夜: 青梅竹马，虽常被捉弄，但感情深厚
+  天天座理世: 极度憧憬和仰慕的对象
+  保登心爱: 朋友，虽有时觉得她冒失，但关系很好
+  香风智乃: 被智乃憧憬的存在，曾教过智乃功课
+  条河麻耶: 同为特招生，被麻耶憧憬
+skills_and_hobbies:
+  - 吹箭百发百中
+  - 维持大小姐言行举止（努力伪装的结果）
+  - 学习成绩优秀
+quirks:
+  - 咖啡因过敏（喝咖啡会性格突变）
+  - 幼时被兔子咬过有心理阴影，后收养野雁逐渐克服
+  - 对自己的贫乳属性感到自卑
