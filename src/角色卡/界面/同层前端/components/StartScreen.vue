@@ -45,6 +45,7 @@
 import { useRouter } from 'vue-router';
 import { useCharacterStore } from '../stores/characterStore';
 import { useGameStore } from '../stores/gameStore';
+import { toastError } from '../utils/toast';
 
 const router = useRouter();
 const characterStore = useCharacterStore();
@@ -67,7 +68,7 @@ async function handleStart() {
     router.push('/game');
   } catch (e) {
     console.error('[启动] 初始化失败:', e);
-    toastr.error('初始化失败，请刷新页面重试');
+    toastError('初始化失败，请刷新页面重试');
   } finally {
     isLoading.value = false;
     gameStore.setLoading(false);
@@ -95,7 +96,7 @@ function getRabbitStyle(index: number) {
 
 <style lang="scss" scoped>
 .start-screen {
-  min-height: 100vh;
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;

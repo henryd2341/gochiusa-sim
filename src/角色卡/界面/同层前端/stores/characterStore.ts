@@ -2,7 +2,6 @@ import waitUntil from 'async-wait-until';
 import _ from 'lodash';
 import { defineStore } from 'pinia';
 import type { Ref } from 'vue';
-import { Schema } from '../../../schema';
 
 // 角色名称映射（中文名 -> 英文文件名）
 export const CHARACTER_NAME_MAP: Record<string, string> = {
@@ -48,6 +47,17 @@ export interface CharacterData {
   关键物品: Record<string, { 描述: string; 数量: number }>;
 }
 
+interface MvuDataShape {
+  世界?: Record<string, unknown>;
+  _主视角?: string;
+  当前场景角色?: string[];
+  [name: string]: unknown;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
 // 获取角色立绘路径
 export function getCharacterPortrait(name: string): string {
   const fileName = CHARACTER_NAME_MAP[name];
@@ -65,7 +75,7 @@ export function getCharacterColor(name: string): string {
 
 export const useCharacterStore = defineStore('character', () => {
   // MVU 数据
-  const mvuData: Ref<z.infer<typeof Schema> | null> = ref(null);
+  const mvuData: Ref<MvuDataShape | null> = ref(null);
   const isInitialized = ref(false);
   let stopMessageListener: { stop: () => void } | null = null;
 
@@ -98,8 +108,8 @@ export const useCharacterStore = defineStore('character', () => {
     try {
       const data = Mvu.getMvuData({ type: 'message', message_id: getCurrentMessageId() });
       const statData = _.get(data, 'stat_data');
-      if (statData) {
-        mvuData.value = Schema.parse(statData);
+      if (isRecord(statData)) {
+        mvuData.value = statData as MvuDataShape;
       }
     } catch (e) {
       console.warn('[角色数据] 刷新失败:', e);
@@ -115,7 +125,8 @@ export const useCharacterStore = defineStore('character', () => {
   // 获取当前场景角色列表
   function getCurrentSceneCharacters(): string[] {
     if (!mvuData.value) return [];
-    return mvuData.value.当前场景角色 || [];
+    const names = mvuData.value.当前场景角色;
+    return Array.isArray(names) ? names : [];
   }
 
   // 获取世界信息
@@ -127,7 +138,7 @@ export const useCharacterStore = defineStore('character', () => {
   // 获取主视角角色
   function getMainPOV(): string {
     if (!mvuData.value) return '无';
-    return mvuData.value._主视角 || '无';
+    return typeof mvuData.value._主视角 === 'string' ? mvuData.value._主视角 : '无';
   }
 
   // 监听消息变化刷新数据

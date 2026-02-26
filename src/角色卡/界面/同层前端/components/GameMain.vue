@@ -36,6 +36,7 @@ import { useCharacterStore } from '../stores/characterStore';
 import type { RoleplayOption } from '../stores/gameStore';
 import { useGameStore } from '../stores/gameStore';
 import { useSettingsStore } from '../stores/settingsStore';
+import { toastError } from '../utils/toast';
 import CharacterBar from './CharacterBar.vue';
 import MessageDisplay from './MessageDisplay.vue';
 import OptionsPanel from './OptionsPanel.vue';
@@ -135,7 +136,7 @@ async function handleSelectOption(option: RoleplayOption) {
     gameStore.updateCurrentCharacters(characters);
   } catch (e) {
     console.error('[游戏主页面] 发送选项失败:', e);
-    toastr.error('发送失败，请重试');
+    toastError('发送失败，请重试');
   } finally {
     gameStore.setGenerating(false);
   }
@@ -158,7 +159,7 @@ eventOn(tavern_events.CHARACTER_MESSAGE_RENDERED, async (messageId: number) => {
 
 <style lang="scss" scoped>
 .game-main {
-  min-height: 100vh;
+  width: 100%;
   display: flex;
   flex-direction: column;
   padding-bottom: 80px; // Space for character bar
@@ -170,7 +171,6 @@ eventOn(tavern_events.CHARACTER_MESSAGE_RENDERED, async (messageId: number) => {
   flex-direction: column;
   padding: var(--spacing-md);
   gap: var(--spacing-lg);
-  overflow-y: auto;
 }
 
 // Responsive

@@ -54,8 +54,8 @@ const props = defineProps({
     default: 0,
   },
   displayMode: {
-    type: String as PropType<'card' | 'bubble' | 'classic'>,
-    default: 'card',
+    type: String as PropType<'instant' | 'typewriter' | 'segment'>,
+    default: 'instant',
   },
 });
 

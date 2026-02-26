@@ -23,9 +23,8 @@ const settingsStore = useSettingsStore();
 
 <style lang="scss" scoped>
 .app-container {
-  min-height: 100vh;
+  width: 100%;
   position: relative;
-  overflow: hidden;
 }
 
 // Page transition animations

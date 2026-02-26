@@ -21,9 +21,9 @@
           </div>
           <div class="setting-control">
             <select v-model="settings.messageDisplayMode" class="setting-select">
-              <option value="card">卡片模式</option>
-              <option value="bubble">气泡模式</option>
-              <option value="classic">经典模式</option>
+              <option value="instant">即时显示</option>
+              <option value="typewriter">打字机</option>
+              <option value="segment">分段显示</option>
             </select>
           </div>
         </div>
@@ -57,9 +57,8 @@
           <div class="setting-control">
             <select v-model="settings.fontScheme" class="setting-select">
               <option value="default">默认字体</option>
-              <option value="elegant">优雅字体</option>
-              <option value="modern">现代字体</option>
-              <option value="classic">经典字体</option>
+              <option value="reading">阅读字体</option>
+              <option value="artistic">艺术字体</option>
             </select>
           </div>
         </div>
@@ -74,7 +73,7 @@
               <button class="size-btn" @click="decreaseFontSize">
                 <i class="fa-solid fa-minus"></i>
               </button>
-              <span class="size-value">{{ settings.fontSize }}px</span>
+              <span class="size-value">{{ fontSizeLabel }}</span>
               <button class="size-btn" @click="increaseFontSize">
                 <i class="fa-solid fa-plus"></i>
               </button>
@@ -198,6 +197,7 @@
 import { useRouter } from 'vue-router';
 import type { GameSettings } from '../stores/settingsStore';
 import { useSettingsStore } from '../stores/settingsStore';
+import { toastSuccess } from '../utils/toast';
 
 const router = useRouter();
 const settingsStore = useSettingsStore();
@@ -205,32 +205,42 @@ const settings = settingsStore.settings;
 
 type ThemeId = GameSettings['theme'];
 const themes: { id: ThemeId; name: string; preview: string }[] = [
-  { id: 'light', name: '明亮', preview: 'linear-gradient(135deg, #fff5f5, #ffe4e6)' },
-  { id: 'dark', name: '暗黑', preview: 'linear-gradient(135deg, #1a1a2e, #16213e)' },
   { id: 'warm', name: '暖色', preview: 'linear-gradient(135deg, #fef3c7, #fde68a)' },
-  { id: 'sakura', name: '樱花', preview: 'linear-gradient(135deg, #fce7f3, #fbcfe8)' },
-  { id: 'ocean', name: '海洋', preview: 'linear-gradient(135deg, #dbeafe, #bfdbfe)' },
+  { id: 'cool', name: '冷色', preview: 'linear-gradient(135deg, #dbeafe, #bfdbfe)' },
+  { id: 'high-contrast', name: '高对比', preview: 'linear-gradient(135deg, #ffffff, #d8d8d8)' },
+  { id: 'eye-care', name: '护眼', preview: 'linear-gradient(135deg, #f5f0e6, #ebe5d9)' },
 ];
+
+const FONT_SIZE_ORDER: GameSettings['fontSize'][] = ['small', 'medium', 'large'];
+const FONT_SIZE_LABEL: Record<GameSettings['fontSize'], string> = {
+  small: '小',
+  medium: '中',
+  large: '大',
+};
+
+const fontSizeLabel = computed(() => FONT_SIZE_LABEL[settings.fontSize]);
 
 function setTheme(id: ThemeId) {
   settings.theme = id;
 }
 
 function increaseFontSize() {
-  if (settings.fontSize < 24) {
-    settings.fontSize += 1;
+  const index = FONT_SIZE_ORDER.indexOf(settings.fontSize);
+  if (index < FONT_SIZE_ORDER.length - 1) {
+    settings.fontSize = FONT_SIZE_ORDER[index + 1];
   }
 }
 
 function decreaseFontSize() {
-  if (settings.fontSize > 12) {
-    settings.fontSize -= 1;
+  const index = FONT_SIZE_ORDER.indexOf(settings.fontSize);
+  if (index > 0) {
+    settings.fontSize = FONT_SIZE_ORDER[index - 1];
   }
 }
 
 function resetSettings() {
   settingsStore.resetSettings();
-  toastr.success('设置已重置');
+  toastSuccess('设置已重置');
 }
 
 function goBack() {
@@ -240,7 +250,7 @@ function goBack() {
 
 <style lang="scss" scoped>
 .settings-page {
-  min-height: 100vh;
+  width: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -531,7 +541,7 @@ function goBack() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--accent-color), var(--accent-secondary));
+  background: linear-gradient(135deg, var(--accent-color), var(--decor-gold));
   border-radius: var(--radius-lg);
   color: white;
   font-size: 36px;

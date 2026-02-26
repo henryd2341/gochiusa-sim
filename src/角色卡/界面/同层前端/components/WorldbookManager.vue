@@ -93,6 +93,7 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
+import { toastError, toastSuccess } from '../utils/toast';
 
 const router = useRouter();
 
@@ -170,10 +171,10 @@ async function toggleEntry(entry: WorldbookEntryDisplay) {
     });
 
     entry.enabled = !entry.enabled;
-    toastr.success(entry.enabled ? '已启用条目' : '已禁用条目');
+    toastSuccess(entry.enabled ? '已启用条目' : '已禁用条目');
   } catch (e) {
     console.error('[世界书] 切换状态失败:', e);
-    toastr.error('操作失败');
+    toastError('操作失败');
   }
 }
 
@@ -200,7 +201,7 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .worldbook-manager {
-  min-height: 100vh;
+  width: 100%;
   display: flex;
   flex-direction: column;
 }
@@ -482,7 +483,7 @@ onMounted(() => {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   max-width: 600px;
   width: 100%;
-  max-height: 80vh;
+  max-height: 32rem;
   display: flex;
   flex-direction: column;
 }
