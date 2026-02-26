@@ -1,0 +1,5 @@
+<body>
+  <script>
+    $('body').load('')
+  </script>
+</body>

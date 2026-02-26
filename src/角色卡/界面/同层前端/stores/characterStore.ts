@@ -67,6 +67,7 @@ export const useCharacterStore = defineStore('character', () => {
   // MVU 数据
   const mvuData: Ref<z.infer<typeof Schema> | null> = ref(null);
   const isInitialized = ref(false);
+  let stopMessageListener: { stop: () => void } | null = null;
 
   // 初始化 MVU 数据
   async function initialize() {
@@ -131,9 +132,16 @@ export const useCharacterStore = defineStore('character', () => {
 
   // 监听消息变化刷新数据
   function setupMessageListener() {
-    eventOn(tavern_events.CHARACTER_MESSAGE_RENDERED, async () => {
+    if (stopMessageListener) return;
+
+    stopMessageListener = eventOn(tavern_events.CHARACTER_MESSAGE_RENDERED, async () => {
       await refreshData();
     });
+  }
+
+  function cleanupMessageListener() {
+    stopMessageListener?.stop();
+    stopMessageListener = null;
   }
 
   return {
@@ -146,5 +154,6 @@ export const useCharacterStore = defineStore('character', () => {
     getWorldInfo,
     getMainPOV,
     setupMessageListener,
+    cleanupMessageListener,
   };
 });
