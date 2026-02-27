@@ -1,5 +1,5 @@
 import { createPinia } from 'pinia';
-import { createApp } from 'vue';
+import { createApp, version as vueVersion } from 'vue';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import App from './App.vue';
 import './global.scss';
@@ -68,6 +68,12 @@ function renderFatalError(error: unknown) {
 }
 
 async function bootstrap() {
+  const appEl = document.getElementById('app');
+  const globalVueVersion = (globalThis as unknown as { Vue?: { version?: string } }).Vue?.version;
+  console.info('[同层前端_v3][probe] vueVersion(import):', vueVersion);
+  console.info('[同层前端_v3][probe] vueVersion(globalThis.Vue):', globalVueVersion ?? 'undefined');
+  console.info('[同层前端_v3][probe] #app exists/isConnected:', !!appEl, appEl?.isConnected ?? false);
+
   await router.replace('/');
   await router.isReady();
   app.mount('#app');
