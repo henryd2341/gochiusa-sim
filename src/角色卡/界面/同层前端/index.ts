@@ -4,6 +4,8 @@ import { createMemoryHistory, createRouter } from 'vue-router';
 import App from './App.vue';
 import './global.scss';
 
+const FRONTEND_BUILD_TAG = 'v3-cdnprobe-2026-02-27a';
+
 type JQueryLike = {
   (handler: () => void): unknown;
   (target: Window): { on: (event: string, handler: () => void) => void };
@@ -70,6 +72,7 @@ function renderFatalError(error: unknown) {
 async function bootstrap() {
   const appEl = document.getElementById('app');
   const globalVueVersion = (globalThis as unknown as { Vue?: { version?: string } }).Vue?.version;
+  console.info('[同层前端_v3][probe] buildTag:', FRONTEND_BUILD_TAG);
   console.info('[同层前端_v3][probe] vueVersion(import):', vueVersion);
   console.info('[同层前端_v3][probe] vueVersion(globalThis.Vue):', globalVueVersion ?? 'undefined');
   console.info('[同层前端_v3][probe] #app exists/isConnected:', !!appEl, appEl?.isConnected ?? false);
