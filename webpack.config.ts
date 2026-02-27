@@ -549,16 +549,16 @@ function parse_configuration(entry: Entry): (_env: any, argv: any) => webpack.Co
         lodash: '_',
         showdown: 'showdown',
         toastr: 'toastr',
-        vue: 'Vue',
-        'vue-router': 'VueRouter',
         yaml: 'YAML',
-        zod: 'z',
       };
       if (request in global) {
         return callback(null, 'var ' + global[request as keyof typeof global]);
       }
       const cdn = {
         sass: 'https://jspm.dev/sass',
+        vue: 'https://testingcf.jsdelivr.net/npm/vue/+esm',
+        'vue-router': 'https://testingcf.jsdelivr.net/npm/vue-router/+esm',
+        zod: 'https://testingcf.jsdelivr.net/npm/zod/+esm',
       };
       return callback(
         null,

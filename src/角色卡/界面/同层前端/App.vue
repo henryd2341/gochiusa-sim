@@ -1,48 +1,36 @@
 <template>
   <div
-    class="app-container"
+    class="app-shell"
     :data-theme="settingsStore.settings.theme"
     :data-font="settingsStore.settings.fontScheme"
     :data-font-size="settingsStore.settings.fontSize"
   >
-    <BackgroundLayer />
-    <router-view v-slot="{ Component }">
-      <transition name="page" mode="out-in">
-        <component :is="Component" />
-      </transition>
-    </router-view>
+    <TopNavBar v-if="route.name !== 'start'" />
+    <main class="app-main">
+      <router-view />
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import BackgroundLayer from './components/BackgroundLayer.vue';
+import { useRoute } from 'vue-router';
+import TopNavBar from './components/TopNavBar.vue';
 import { useSettingsStore } from './stores/settingsStore';
 
+const route = useRoute();
 const settingsStore = useSettingsStore();
 </script>
 
-<style lang="scss" scoped>
-.app-container {
+<style scoped lang="scss">
+.app-shell {
   min-height: 100vh;
-  position: relative;
-  overflow: hidden;
+  background: var(--primary-bg);
+  color: var(--text-primary);
 }
 
-// Page transition animations
-.page-enter-active,
-.page-leave-active {
-  transition:
-    opacity 0.3s ease,
-    transform 0.3s ease;
-}
-
-.page-enter-from {
-  opacity: 0;
-  transform: translateX(20px);
-}
-
-.page-leave-to {
-  opacity: 0;
-  transform: translateX(-20px);
+.app-main {
+  width: min(960px, 100%);
+  margin: 0 auto;
+  padding: 12px;
 }
 </style>
