@@ -1,0 +1,7 @@
+```
+<body>
+  <script>
+$('body').load('https://testingcf.jsdelivr.net/gh/henryd2341/gochiusa-sim/dist/%E8%A7%92%E8%89%B2%E5%8D%A1/%E7%95%8C%E9%9D%A2/%E5%90%8C%E5%B1%82%E5%89%8D%E7%AB%AF/index.html');
+  </script>
+</body>
+```
