@@ -9,46 +9,16 @@ type JQueryLike = {
   (target: Window): { on: (event: string, handler: () => void) => void };
 };
 
-// 定义路由
-const routes = [
-  {
-    path: '/',
-    name: 'start',
-    component: () => import('./components/StartScreen.vue'),
-  },
-  {
-    path: '/game',
-    name: 'game',
-    component: () => import('./components/GameMain.vue'),
-  },
-  {
-    path: '/character/:name',
-    name: 'character',
-    component: () => import('./components/CharacterDetail.vue'),
-  },
-  {
-    path: '/history',
-    name: 'history',
-    component: () => import('./components/HistoryMessages.vue'),
-  },
-  {
-    path: '/worldbook',
-    name: 'worldbook',
-    component: () => import('./components/WorldbookManager.vue'),
-  },
-  {
-    path: '/settings',
-    name: 'settings',
-    component: () => import('./components/SettingsPage.vue'),
-  },
-];
-
 const router = createRouter({
   history: createMemoryHistory(),
-  routes,
+  routes: [
+    { path: '/', name: 'start', component: () => import('./components/StartScreen.vue') },
+    { path: '/game', name: 'game', component: () => import('./components/GameMain.vue') },
+    { path: '/history', name: 'history', component: () => import('./components/HistoryMessages.vue') },
+    { path: '/settings', name: 'settings', component: () => import('./components/SettingsPage.vue') },
+  ],
 });
 
-// 创建应用
 const app = createApp(App);
 app.use(createPinia());
 app.use(router);
@@ -78,63 +48,50 @@ function onPageHide(handler: () => void) {
     $(window).on('pagehide', handler);
     return;
   }
-
   window.addEventListener('pagehide', handler, { once: true });
 }
 
 function formatError(error: unknown): string {
-  if (error instanceof Error) {
-    return `${error.name}: ${error.message}`;
-  }
+  if (error instanceof Error) return `${error.name}: ${error.message}`;
   return String(error);
 }
 
 function renderFatalError(error: unknown) {
   const appEl = document.getElementById('app');
   if (!appEl) return;
-
-  const message = formatError(error);
   appEl.innerHTML = `
-    <div style="padding: 16px; border: 1px solid #f0d4d4; border-radius: 8px; background: #fff7f7; color: #7a3030; font-size: 14px; line-height: 1.6;">
-      <div style="font-weight: 700; margin-bottom: 8px;">同层前端启动失败</div>
-      <div style="white-space: pre-wrap; word-break: break-word;">${message}</div>
+    <div style="padding:12px;border:1px solid #f0d4d4;border-radius:8px;background:#fff7f7;color:#7a3030;line-height:1.6;">
+      <div style="font-weight:700;margin-bottom:6px;">同层前端启动失败</div>
+      <div style="white-space:pre-wrap;word-break:break-word;">${formatError(error)}</div>
     </div>
   `;
 }
 
-app.config.errorHandler = error => {
-  console.error('[同层前端] Vue 运行时错误:', error);
-};
-
-router.onError(error => {
-  console.error('[同层前端] 路由错误:', error);
-});
-
 async function bootstrap() {
-  // createMemoryHistory 在 iframe 场景下默认无初始位置，需要显式导航
   await router.replace('/');
   await router.isReady();
   app.mount('#app');
 }
 
-// 挂载应用
-onReady(() => {
-  bootstrap()
-    .then(() => {
-      console.info('[同层前端] 界面加载成功');
-    })
-    .catch(error => {
-      console.error('[同层前端] 启动失败:', error);
-      renderFatalError(error);
-    });
+app.config.errorHandler = error => {
+  console.error('[同层前端_v3] Vue 运行时错误:', error);
+};
+
+router.onError(error => {
+  console.error('[同层前端_v3] 路由错误:', error);
 });
 
-// 卸载处理
+onReady(() => {
+  bootstrap().catch(error => {
+    console.error('[同层前端_v3] 启动失败:', error);
+    renderFatalError(error);
+  });
+});
+
 onPageHide(() => {
   try {
     app.unmount();
-    console.info('[同层前端] 界面卸载成功');
   } catch (error) {
-    console.warn('[同层前端] 卸载异常:', error);
+    console.warn('[同层前端_v3] 卸载异常:', error);
   }
 });
