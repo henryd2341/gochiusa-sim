@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import type { Ref } from 'vue';
 
+// 选项类型
 export interface RoleplayOption {
   id: string;
   title: string;
@@ -8,86 +9,139 @@ export interface RoleplayOption {
   isCustom?: boolean;
 }
 
-const POV_STORAGE_KEY = 'gochiusa-sim.pov.v3';
+// 页面类型
+export type PageName = 'start' | 'game' | 'character' | 'history' | 'worldbook' | 'settings';
 
-const POV_OPENING_MAP: Record<string, string> = {
-  保登心爱:
-    '【开场】清晨的 Rabbit House 弥漫着新烘焙咖啡的香气。你推门而入，心爱正在柜台后朝你挥手，今天的故事从这一刻开始。',
-  香风智乃: '【开场】咖啡杯沿升起细白热气。你安静地坐下，智乃把菜单轻轻推到你面前，视线在你与窗外晨光之间短暂停留。',
-  天天座理世:
-    '【开场】门铃清脆作响。理世利落地整理着围裙与杯具，向你点头示意。今天的每一步选择，都会让日常偏离原有轨道。',
-  宇治松千夜: '【开场】和风甜点的香气从柜台另一侧飘来。千夜眯着眼微笑，把刚出炉的点心摆上托盘，邀请你参与今天的安排。',
-  桐间纱路:
-    '【开场】你刚落座，纱路已经把账本与托盘分门别类地摆好。她装作镇定地抬头，语速比平时略快地向你说明今天的计划。',
-};
-
-const DEFAULT_POV = '保登心爱';
-
-function loadPov(): string | null {
-  try {
-    const value = localStorage.getItem(POV_STORAGE_KEY);
-    return typeof value === 'string' && value.length > 0 ? value : null;
-  } catch {
-    return null;
-  }
+// 游戏状态
+export interface GameState {
+  currentPage: PageName;
+  currentMessage: string;
+  currentMessageId: number;
+  options: RoleplayOption[];
+  currentCharacters: string[];
+  isCharacterBarCollapsed: boolean;
+  isFullscreen: boolean;
+  isLoading: boolean;
+  isGenerating: boolean;
 }
 
-export const useGameStore = defineStore('gochiusa-game-v3', () => {
-  const currentMessage = ref('');
-  const currentMessageId = ref(-1);
-  const options = ref<RoleplayOption[]>([]);
-  const isGenerating = ref(false);
-  const isLoading = ref(false);
-  const selectedPov = ref<string | null>(loadPov());
+export const useGameStore = defineStore('game', () => {
+  // 页面状态
+  const currentPage: Ref<PageName> = ref('start');
 
-  function setMessage(message: string, messageId: number) {
+  // 消息状态
+  const currentMessage = ref('');
+  const currentMessageId = ref(0);
+
+  // 选项状态
+  const options: Ref<RoleplayOption[]> = ref([]);
+
+  // 角色状态
+  const currentCharacters: Ref<string[]> = ref([]);
+
+  // UI 状态
+  const isCharacterBarCollapsed = ref(false);
+  const isFullscreen = ref(false);
+  const isLoading = ref(false);
+  const isGenerating = ref(false);
+
+  // 选中的角色（用于详情页）
+  const selectedCharacter = ref<string | null>(null);
+
+  // 页面导航
+  function navigateTo(page: PageName) {
+    currentPage.value = page;
+  }
+
+  // 更新消息
+  function updateMessage(message: string, messageId: number) {
     currentMessage.value = message;
     currentMessageId.value = messageId;
   }
 
-  function setOptions(next: RoleplayOption[]) {
-    options.value = next;
+  // 更新选项
+  function updateOptions(newOptions: RoleplayOption[]) {
+    options.value = newOptions;
   }
 
-  function setGenerating(value: boolean) {
-    isGenerating.value = value;
+  // 添加自定义选项
+  function addCustomOption(title: string, content: string) {
+    const newOption: RoleplayOption = {
+      id: `custom-${Date.now()}`,
+      title: title || '自定义行动',
+      content,
+      isCustom: true,
+    };
+    options.value.push(newOption);
   }
 
-  function setLoading(value: boolean) {
-    isLoading.value = value;
-  }
-
-  function setPov(pov: string) {
-    selectedPov.value = pov;
-    try {
-      localStorage.setItem(POV_STORAGE_KEY, pov);
-    } catch {
-      // ignore storage write failure in sandboxed iframe
+  // 移除选项
+  function removeOption(optionId: string) {
+    const index = options.value.findIndex(opt => opt.id === optionId);
+    if (index !== -1) {
+      options.value.splice(index, 1);
     }
   }
 
-  function getOpeningLine() {
-    const pov = selectedPov.value ?? DEFAULT_POV;
-    return POV_OPENING_MAP[pov] ?? POV_OPENING_MAP[DEFAULT_POV];
+  // 更新当前场景角色
+  function updateCurrentCharacters(characters: string[]) {
+    currentCharacters.value = characters;
   }
 
-  function listAvailablePov() {
-    return Object.keys(POV_OPENING_MAP);
+  // 切换角色栏折叠状态
+  function toggleCharacterBar() {
+    isCharacterBarCollapsed.value = !isCharacterBarCollapsed.value;
+  }
+
+  // 切换全屏
+  function toggleFullscreen() {
+    isFullscreen.value = !isFullscreen.value;
+    if (isFullscreen.value) {
+      document.documentElement.requestFullscreen?.();
+    } else {
+      document.exitFullscreen?.();
+    }
+  }
+
+  // 选择角色
+  function selectCharacter(name: string | null) {
+    selectedCharacter.value = name;
+  }
+
+  // 设置加载状态
+  function setLoading(loading: boolean) {
+    isLoading.value = loading;
+  }
+
+  // 设置生成状态
+  function setGenerating(generating: boolean) {
+    isGenerating.value = generating;
   }
 
   return {
+    // State
+    currentPage,
     currentMessage,
     currentMessageId,
     options,
-    isGenerating,
+    currentCharacters,
+    isCharacterBarCollapsed,
+    isFullscreen,
     isLoading,
-    selectedPov,
-    setMessage,
-    setOptions,
-    setGenerating,
+    isGenerating,
+    selectedCharacter,
+
+    // Actions
+    navigateTo,
+    updateMessage,
+    updateOptions,
+    addCustomOption,
+    removeOption,
+    updateCurrentCharacters,
+    toggleCharacterBar,
+    toggleFullscreen,
+    selectCharacter,
     setLoading,
-    setPov,
-    getOpeningLine,
-    listAvailablePov,
+    setGenerating,
   };
 });

@@ -1,125 +1,146 @@
 <template>
-  <section>
-    <MessageDisplay :message="gameStore.currentMessage" :message-id="gameStore.currentMessageId" />
+  <div class="game-main">
+    <!-- Top Navigation Bar -->
+    <TopNavBar />
 
-    <OptionsPanel :options="gameStore.options" :disabled="gameStore.isGenerating" @select="handleSelect" />
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Message Display Area -->
+      <MessageDisplay
+        :message="gameStore.currentMessage"
+        :message-id="gameStore.currentMessageId"
+        :display-mode="settingsStore.settings.messageDisplayMode"
+      />
 
-    <div class="meta card">
-      <div>主视角：{{ gameStore.selectedPov ?? characterStore.mvuData?._主视角 ?? '未知' }}</div>
-      <div>当前场景角色：{{ sceneCharactersText }}</div>
-      <button class="refresh-btn" :disabled="gameStore.isLoading" @click="refreshAll">
-        {{ gameStore.isLoading ? '刷新中...' : '刷新消息' }}
-      </button>
-    </div>
-  </section>
+      <!-- Options Panel -->
+      <OptionsPanel
+        :options="gameStore.options"
+        :allow-custom="settingsStore.settings.allowCustomOptions"
+        @select="handleSelectOption"
+      />
+    </main>
+
+    <!-- Character Bar (Collapsible) -->
+    <CharacterBar
+      v-if="settingsStore.settings.showCharacterBar"
+      :collapsed="gameStore.isCharacterBarCollapsed"
+      :characters="gameStore.currentCharacters"
+      @toggle="gameStore.toggleCharacterBar"
+      @select-character="handleSelectCharacter"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useCharacterStore } from '../stores/characterStore';
-import { useGameStore, type RoleplayOption } from '../stores/gameStore';
+import type { RoleplayOption } from '../stores/gameStore';
+import { useGameStore } from '../stores/gameStore';
+import { useSettingsStore } from '../stores/settingsStore';
+import { parseAiReply } from '../utils/aiReplyParser';
+import CharacterBar from './CharacterBar.vue';
 import MessageDisplay from './MessageDisplay.vue';
 import OptionsPanel from './OptionsPanel.vue';
+import TopNavBar from './TopNavBar.vue';
 
+const router = useRouter();
 const gameStore = useGameStore();
+const settingsStore = useSettingsStore();
 const characterStore = useCharacterStore();
+let hasShownFormatWarning = false;
+let stopMessageRenderedListener: { stop: () => void } | null = null;
 
-const sceneCharactersText = computed(() => {
-  const list = characterStore.getCurrentSceneCharacters();
-  return list.length > 0 ? list.join(' / ') : '无';
+// 初始化数据
+onMounted(async () => {
+  await initializeGame();
 });
 
-type AssistantMessageLike = {
-  message_id: number;
-  message: string;
-};
-
-function isAssistantMessageLike(value: unknown): value is AssistantMessageLike {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'message_id' in value &&
-    'message' in value &&
-    typeof (value as { message_id?: unknown }).message_id === 'number' &&
-    typeof (value as { message?: unknown }).message === 'string'
-  );
-}
-
-function parseOptionsFromMessage(message: string): RoleplayOption[] {
-  const block = message.match(/<roleplay_options>([\s\S]*?)<\/roleplay_options>/i);
-  if (!block) return [];
-
-  const lines = block[1]
-    .split('\n')
-    .map(line => line.trim())
-    .filter(Boolean);
-
-  const options: RoleplayOption[] = [];
-  for (let i = 0; i < lines.length; i += 1) {
-    const line = lines[i];
-    const matched = line.match(/^(.+?)[:：]\s*(.+)$/);
-    if (!matched) continue;
-    options.push({
-      id: `opt-${i}-${Date.now()}`,
-      title: matched[1].trim(),
-      content: matched[2]
-        .trim()
-        .replace(/^「(.+)」$/, '$1')
-        .replace(/^\$\{(.+)\}$/, '$1'),
-    });
-  }
-  return options;
-}
-
-async function loadLatestAssistantMessage() {
-  const latestId = getLastMessageId();
-  if (latestId < 0) {
-    gameStore.setMessage(gameStore.getOpeningLine(), 0);
-    gameStore.setOptions([]);
-    return;
-  }
-
-  let current: AssistantMessageLike | undefined;
-  for (let id = latestId; id >= 0; id -= 1) {
-    const messages = getChatMessages(id, { role: 'assistant', hide_state: 'all' });
-    const candidate = messages[0];
-    if (isAssistantMessageLike(candidate)) {
-      current = candidate;
-      break;
-    }
-  }
-
-  if (!current) {
-    gameStore.setMessage(gameStore.getOpeningLine(), 0);
-    gameStore.setOptions([]);
-    return;
-  }
-
-  if (current.message_id === 0) {
-    gameStore.setMessage(gameStore.getOpeningLine(), 0);
-    gameStore.setOptions([]);
-    return;
-  }
-
-  gameStore.setMessage(current.message, current.message_id);
-  gameStore.setOptions(parseOptionsFromMessage(current.message));
-}
-
-async function refreshAll() {
-  gameStore.setLoading(true);
+async function initializeGame() {
   try {
-    await characterStore.refresh();
-    await loadLatestAssistantMessage();
-  } finally {
-    gameStore.setLoading(false);
+    // 刷新角色数据
+    await characterStore.refreshData();
+
+    // 获取当前消息
+    await loadCurrentMessage();
+
+    // 更新当前场景角色
+    const characters = characterStore.getCurrentSceneCharacters();
+    gameStore.updateCurrentCharacters(characters);
+
+    console.info('[游戏主页面] 初始化完成');
+  } catch (e) {
+    console.error('[游戏主页面] 初始化失败:', e);
   }
 }
 
-async function handleSelect(option: RoleplayOption) {
+// 加载当前消息
+async function loadCurrentMessage() {
+  try {
+    // 获取最后一条AI消息
+    const lastMessageId = SillyTavern.chat.length - 1;
+    let assistantMessage: { message: string; message_id: number } | null = null;
+
+    for (let i = lastMessageId; i >= 0; i--) {
+      const msg = getChatMessages(i)[0];
+      if (msg?.role === 'assistant') {
+        assistantMessage = {
+          message: msg.message,
+          message_id: i,
+        };
+        break;
+      }
+    }
+
+    if (!assistantMessage) {
+      gameStore.updateMessage('', 0);
+      gameStore.updateOptions([]);
+      return;
+    }
+
+    const parsed = parseAiReply(assistantMessage.message);
+
+    if (!parsed.isValid) {
+      const fallbackMessage = parsed.context || 'AI 回复格式异常，请使用下方按钮重新生成。';
+      gameStore.updateMessage(fallbackMessage, assistantMessage.message_id);
+      gameStore.updateOptions([
+        {
+          id: 'system-reroll',
+          title: '[系统]',
+          content: '重 Roll（重新生成上一条 AI 回复）',
+          isCustom: false,
+        },
+      ]);
+
+      if (!hasShownFormatWarning) {
+        hasShownFormatWarning = true;
+        toastr.warning(`AI 回复格式异常：${parsed.errors.join('；')}`);
+      }
+      return;
+    }
+
+    hasShownFormatWarning = false;
+    gameStore.updateMessage(parsed.context, assistantMessage.message_id);
+    gameStore.updateOptions(parsed.options);
+  } catch (e) {
+    console.error('[游戏主页面] 加载消息失败:', e);
+  }
+}
+
+// 处理选项选择
+async function handleSelectOption(option: RoleplayOption) {
   if (gameStore.isGenerating) return;
 
   gameStore.setGenerating(true);
+
   try {
+    if (option.id === 'system-reroll') {
+      await triggerSlash('/trigger');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await loadCurrentMessage();
+      return;
+    }
+
+    // 在酒馆中创建用户消息
     await createChatMessages([
       {
         role: 'user',
@@ -127,46 +148,73 @@ async function handleSelect(option: RoleplayOption) {
       },
     ]);
 
+    // 触发AI生成
     await triggerSlash('/trigger');
-    await refreshAll();
-  } catch (error) {
-    console.error('[同层前端_v3] 发送选项失败:', error);
+
+    // 等待消息渲染完成后刷新
+    await new Promise(resolve => setTimeout(resolve, 500));
+    await loadCurrentMessage();
+    await characterStore.refreshData();
+
+    // 更新当前场景角色
+    const characters = characterStore.getCurrentSceneCharacters();
+    gameStore.updateCurrentCharacters(characters);
+  } catch (e) {
+    console.error('[游戏主页面] 发送选项失败:', e);
+    toastr.error('发送失败，请重试');
   } finally {
     gameStore.setGenerating(false);
   }
 }
 
-let stopRendered: { stop: () => void } | null = null;
+// 处理角色选择
+function handleSelectCharacter(name: string) {
+  gameStore.selectCharacter(name);
+  router.push(`/character/${encodeURIComponent(name)}`);
+}
 
-onMounted(async () => {
-  await characterStore.initialize();
-  await refreshAll();
-
-  stopRendered = eventOn(tavern_events.CHARACTER_MESSAGE_RENDERED, async () => {
-    await refreshAll();
+// 监听消息变化
+onMounted(() => {
+  stopMessageRenderedListener = eventOn(tavern_events.CHARACTER_MESSAGE_RENDERED, async () => {
+    await loadCurrentMessage();
+    await characterStore.refreshData();
   });
 });
 
 onUnmounted(() => {
-  stopRendered?.stop();
-  stopRendered = null;
+  stopMessageRenderedListener?.stop();
+  stopMessageRenderedListener = null;
 });
 </script>
 
-<style scoped lang="scss">
-.meta {
-  margin-top: 12px;
-  padding: 10px;
-  display: grid;
-  gap: 8px;
+<style lang="scss" scoped>
+.game-main {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 80px; // Space for character bar
 }
 
-.refresh-btn {
-  justify-self: start;
-  border: 1px solid var(--border-color);
-  background: var(--secondary-bg);
-  border-radius: 8px;
-  padding: 8px 12px;
-  cursor: pointer;
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-md);
+  gap: var(--spacing-lg);
+  overflow-y: auto;
+}
+
+// Responsive
+@media (min-width: 1024px) {
+  .game-main {
+    padding-bottom: 0;
+  }
+
+  .main-content {
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+    padding: var(--spacing-xl);
+  }
 }
 </style>

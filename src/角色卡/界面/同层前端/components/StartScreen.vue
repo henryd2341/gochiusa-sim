@@ -1,28 +1,47 @@
 <template>
-  <section class="card start">
-    <h1>点兔同层前端 v3</h1>
-    <p>先初始化 MVU 与消息状态，再进入主界面。</p>
+  <div class="start-screen">
+    <div class="start-content">
+      <!-- Logo -->
+      <div class="logo-container animate-fadeInDown">
+        <svg class="logo-svg" viewBox="0 0 400 120">
+          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" class="logo-text">
+            ご注文はうさぎですか？
+          </text>
+          <text x="50%" y="85%" text-anchor="middle" dominant-baseline="middle" class="logo-subtitle">
+            请问您今天要来点兔子吗？
+          </text>
+        </svg>
+      </div>
 
-    <div v-if="isFirstRun" class="pov card">
-      <h2>主视角</h2>
-      <p class="hint">首次进入请选择主视角，开场白将按该视角确定。</p>
+      <!-- Press Start Button -->
+      <button class="press-start-btn animate-fadeInUp" :disabled="isLoading" @click="handleStart">
+        <span class="btn-text" :class="{ 'animate-pulse': !isLoading }">
+          {{ isLoading ? '加载中...' : 'Press Start' }}
+        </span>
+        <span class="btn-decor"></span>
+      </button>
 
-      <label v-for="name in povOptions" :key="name" class="pov-item">
-        <input v-model="pendingPov" type="radio" :value="name" />
-        <span>{{ name }}</span>
-      </label>
+      <!-- Version Info -->
+      <div class="version-info animate-fadeIn">
+        <span>Version 1.0.0</span>
+        <span class="separator">|</span>
+        <span>点兔同层前端</span>
+      </div>
     </div>
 
-    <p v-else class="hint done">已记住主视角：{{ gameStore.selectedPov }}</p>
-
-    <button class="start-btn" :disabled="isLoading" @click="handleStart">
-      {{ isLoading ? '初始化中...' : 'Press Start' }}
-    </button>
-  </section>
+    <!-- Decorative elements -->
+    <div class="decorative-rabbits">
+      <svg v-for="i in 5" :key="i" class="rabbit-icon" :style="getRabbitStyle(i)" viewBox="0 0 24 24">
+        <path
+          d="M12 2C9.5 2 7.5 4 7.5 6.5C7.5 7.5 7.8 8.4 8.3 9.1L6 14L9 12L12 16L15 12L18 14L15.7 9.1C16.2 8.4 16.5 7.5 16.5 6.5C16.5 4 14.5 2 12 2Z"
+          fill="currentColor"
+        />
+      </svg>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useCharacterStore } from '../stores/characterStore';
 import { useGameStore } from '../stores/gameStore';
@@ -30,72 +49,200 @@ import { useGameStore } from '../stores/gameStore';
 const router = useRouter();
 const characterStore = useCharacterStore();
 const gameStore = useGameStore();
-const isLoading = ref(false);
-const isFirstRun = computed(() => !gameStore.selectedPov);
 
-const povOptions = computed(() => gameStore.listAvailablePov());
-const pendingPov = ref(gameStore.selectedPov ?? gameStore.listAvailablePov()[0] ?? '保登心爱');
+const isLoading = ref(false);
 
 async function handleStart() {
   if (isLoading.value) return;
+
   isLoading.value = true;
+  gameStore.setLoading(true);
+
   try {
-    if (isFirstRun.value) {
-      gameStore.setPov(pendingPov.value);
-    }
+    // 初始化角色数据
     await characterStore.initialize();
-    await router.push('/game');
-  } catch (error) {
-    console.error('[同层前端_v3] 启动页初始化失败:', error);
+
+    // 导航到游戏主页面
+    router.push('/game');
+  } catch (e) {
+    console.error('[启动] 初始化失败:', e);
+    toastr.error('初始化失败，请刷新页面重试');
   } finally {
     isLoading.value = false;
+    gameStore.setLoading(false);
   }
+}
+
+function getRabbitStyle(index: number) {
+  const positions = [
+    { left: '5%', top: '15%', size: '20px', delay: '0s' },
+    { left: '90%', top: '25%', size: '16px', delay: '0.5s' },
+    { left: '8%', top: '75%', size: '18px', delay: '1s' },
+    { left: '92%', top: '70%', size: '22px', delay: '1.5s' },
+    { left: '50%', top: '90%', size: '14px', delay: '2s' },
+  ];
+  const pos = positions[index - 1] || positions[0];
+  return {
+    left: pos.left,
+    top: pos.top,
+    width: pos.size,
+    height: pos.size,
+    animationDelay: pos.delay,
+  };
 }
 </script>
 
-<style scoped lang="scss">
-.start {
-  margin-top: 12vh;
-  padding: 24px;
+<style lang="scss" scoped>
+.start-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  position: relative;
+  overflow: hidden;
+}
+
+.start-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-2xl);
+  z-index: 1;
+}
+
+.logo-container {
   text-align: center;
 }
 
-.pov {
-  margin: 14px auto 0;
-  max-width: 520px;
-  text-align: left;
-  padding: 12px;
+.logo-svg {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
 }
 
-.pov h2 {
-  margin: 0 0 8px;
+.logo-text {
+  font-family: var(--font-decor);
+  font-size: 28px;
+  font-weight: 600;
+  fill: var(--accent-color);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.logo-subtitle {
+  font-family: var(--font-heading);
   font-size: 16px;
+  fill: var(--text-secondary);
 }
 
-.hint {
-  margin: 0 0 8px;
-  color: var(--text-secondary);
-  font-size: 13px;
+.press-start-btn {
+  position: relative;
+  padding: var(--spacing-md) var(--spacing-2xl);
+  background: linear-gradient(135deg, var(--accent-color) 0%, var(--decor-gold) 100%);
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  overflow: hidden;
+  transition: all var(--transition-normal);
+  box-shadow: 0 4px 15px rgba(212, 165, 116, 0.3);
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(212, 165, 116, 0.4);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
 }
 
-.done {
-  margin-top: 14px;
+.btn-text {
+  font-family: var(--font-decor);
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  position: relative;
+  z-index: 1;
 }
 
-.pov-item {
+.btn-decor {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transform: translateX(-100%);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.version-info {
+  font-family: var(--font-ui);
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 0;
+  gap: var(--spacing-sm);
 }
 
-.start-btn {
-  margin-top: 16px;
-  border: 1px solid var(--border-color);
-  background: var(--accent-color);
-  color: #fff;
-  border-radius: 8px;
-  padding: 10px 18px;
-  cursor: pointer;
+.separator {
+  opacity: 0.5;
+}
+
+.decorative-rabbits {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.rabbit-icon {
+  position: absolute;
+  color: var(--decor-gold);
+  opacity: 0.15;
+  animation: rabbitFloat 4s ease-in-out infinite;
+}
+
+@keyframes rabbitFloat {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(5deg);
+  }
+}
+
+// Responsive
+@media (max-width: 767px) {
+  .logo-text {
+    font-size: 20px;
+  }
+
+  .logo-subtitle {
+    font-size: 12px;
+  }
+
+  .press-start-btn {
+    padding: var(--spacing-sm) var(--spacing-xl);
+  }
+
+  .btn-text {
+    font-size: var(--font-size-lg);
+  }
+
+  .decorative-rabbits {
+    display: none;
+  }
 }
 </style>
