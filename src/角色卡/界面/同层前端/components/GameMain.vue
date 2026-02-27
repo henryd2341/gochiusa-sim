@@ -5,7 +5,7 @@
     <OptionsPanel :options="gameStore.options" :disabled="gameStore.isGenerating" @select="handleSelect" />
 
     <div class="meta card">
-      <div>主视角：{{ characterStore.mvuData?._主视角 ?? '未知' }}</div>
+      <div>主视角：{{ gameStore.selectedPov ?? characterStore.mvuData?._主视角 ?? '未知' }}</div>
       <div>当前场景角色：{{ sceneCharactersText }}</div>
       <button class="refresh-btn" :disabled="gameStore.isLoading" @click="refreshAll">
         {{ gameStore.isLoading ? '刷新中...' : '刷新消息' }}
@@ -28,6 +28,22 @@ const sceneCharactersText = computed(() => {
   const list = characterStore.getCurrentSceneCharacters();
   return list.length > 0 ? list.join(' / ') : '无';
 });
+
+type AssistantMessageLike = {
+  message_id: number;
+  message: string;
+};
+
+function isAssistantMessageLike(value: unknown): value is AssistantMessageLike {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'message_id' in value &&
+    'message' in value &&
+    typeof (value as { message_id?: unknown }).message_id === 'number' &&
+    typeof (value as { message?: unknown }).message === 'string'
+  );
+}
 
 function parseOptionsFromMessage(message: string): RoleplayOption[] {
   const block = message.match(/<roleplay_options>([\s\S]*?)<\/roleplay_options>/i);
@@ -58,21 +74,35 @@ function parseOptionsFromMessage(message: string): RoleplayOption[] {
 async function loadLatestAssistantMessage() {
   const latestId = getLastMessageId();
   if (latestId < 0) {
-    gameStore.setMessage('', -1);
+    gameStore.setMessage(gameStore.getOpeningLine(), 0);
     gameStore.setOptions([]);
     return;
   }
 
-  const messages = getChatMessages(latestId, { role: 'assistant', hide_state: 'all' });
-  const current = messages[0];
+  let current: AssistantMessageLike | undefined;
+  for (let id = latestId; id >= 0; id -= 1) {
+    const messages = getChatMessages(id, { role: 'assistant', hide_state: 'all' });
+    const candidate = messages[0];
+    if (isAssistantMessageLike(candidate)) {
+      current = candidate;
+      break;
+    }
+  }
+
   if (!current) {
-    gameStore.setMessage('', latestId);
+    gameStore.setMessage(gameStore.getOpeningLine(), 0);
     gameStore.setOptions([]);
     return;
   }
 
-  gameStore.setMessage(current.message ?? '', latestId);
-  gameStore.setOptions(parseOptionsFromMessage(current.message ?? ''));
+  if (current.message_id === 0) {
+    gameStore.setMessage(gameStore.getOpeningLine(), 0);
+    gameStore.setOptions([]);
+    return;
+  }
+
+  gameStore.setMessage(current.message, current.message_id);
+  gameStore.setOptions(parseOptionsFromMessage(current.message));
 }
 
 async function refreshAll() {
