@@ -51,11 +51,7 @@ function common_path(lhs: string, rhs: string) {
 function glob_script_files() {
   const results: string[] = [];
 
-<<<<<<< HEAD
   fs.globSync(`src/**/index.{ts,tsx,js,jsx}`)
-=======
-  fs.globSync(`{示例,src}/**/index.{ts,tsx,js,jsx}`)
->>>>>>> 95299edcaebf7bb81b1a8d87fb1226c74ed1188a
     .filter(
       file => process.env.CI !== 'true' || !fs.readFileSync(path.join(import.meta.dirname, file)).includes('@no-ci'),
     )
@@ -553,26 +549,16 @@ function parse_configuration(entry: Entry): (_env: any, argv: any) => webpack.Co
         lodash: '_',
         showdown: 'showdown',
         toastr: 'toastr',
-<<<<<<< HEAD
         yaml: 'YAML',
-=======
-        vue: 'Vue',
-        'vue-router': 'VueRouter',
-        yaml: 'YAML',
-        zod: 'z',
->>>>>>> 95299edcaebf7bb81b1a8d87fb1226c74ed1188a
       };
       if (request in global) {
         return callback(null, 'var ' + global[request as keyof typeof global]);
       }
       const cdn = {
         sass: 'https://jspm.dev/sass',
-<<<<<<< HEAD
         vue: 'https://testingcf.jsdelivr.net/npm/vue/+esm',
         'vue-router': 'https://testingcf.jsdelivr.net/npm/vue-router/+esm',
         zod: 'https://testingcf.jsdelivr.net/npm/zod/+esm',
-=======
->>>>>>> 95299edcaebf7bb81b1a8d87fb1226c74ed1188a
       };
       return callback(
         null,
