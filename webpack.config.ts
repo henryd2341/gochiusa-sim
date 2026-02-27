@@ -51,7 +51,7 @@ function common_path(lhs: string, rhs: string) {
 function glob_script_files() {
   const results: string[] = [];
 
-  fs.globSync(`src/**/index.{ts,tsx,js,jsx}`)
+  fs.globSync(`{src}/**/index.{ts,tsx,js,jsx}`)
     .filter(
       file => process.env.CI !== 'true' || !fs.readFileSync(path.join(import.meta.dirname, file)).includes('@no-ci'),
     )
@@ -549,16 +549,16 @@ function parse_configuration(entry: Entry): (_env: any, argv: any) => webpack.Co
         lodash: '_',
         showdown: 'showdown',
         toastr: 'toastr',
+        vue: 'Vue',
+        'vue-router': 'VueRouter',
         yaml: 'YAML',
+        zod: 'z',
       };
       if (request in global) {
         return callback(null, 'var ' + global[request as keyof typeof global]);
       }
       const cdn = {
         sass: 'https://jspm.dev/sass',
-        vue: 'https://testingcf.jsdelivr.net/npm/vue/+esm',
-        'vue-router': 'https://testingcf.jsdelivr.net/npm/vue-router/+esm',
-        zod: 'https://testingcf.jsdelivr.net/npm/zod/+esm',
       };
       return callback(
         null,
