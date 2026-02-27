@@ -6,33 +6,38 @@
     :data-reduced-motion="settings.reduceMotion ? 'true' : 'false'"
     :style="pageRootStyle"
   >
+    <div class="background-layer">
+      <div class="bg-gradient"></div>
+    </div>
+
+    <transition name="fade">
+      <section v-if="isSplashScreenVisible" class="splash-screen">
+        <div class="splash-logo animate-fadeInDown">
+          <h1 class="splash-title">ご注文はうさぎですか？</h1>
+          <p class="splash-subtitle">请问您今天要来点兔子吗？</p>
+        </div>
+        <button class="press-start-btn animate-fadeInUp" @click="handleStart">
+          <span class="animate-pulse">PRESS START</span>
+        </button>
+      </section>
+    </transition>
+
     <h1 id="page-main-title" class="sr-only">点兔文字交互主页面</h1>
 
     <header id="region-top-nav" role="banner" aria-label="顶部导航">
-      <button
-        id="btn-open-main-menu"
-        type="button"
-        class="btn nav-btn"
-        aria-label="打开主菜单"
-        @click="openFeatureModal('settings')"
-      >
-        <i class="fa-solid fa-bars" aria-hidden="true"></i>
-        <span>菜单</span>
-      </button>
-
       <div id="brand-logo-wrap" aria-label="品牌标识">
-        <span class="brand-main">点兔叙事界面</span>
+        <span class="brand-main">叙事界面</span>
         <small class="brand-sub">沉浸式文字交互</small>
       </div>
 
       <nav id="nav-feature-entry" aria-label="功能入口">
         <button id="btn-open-tab-history" type="button" class="btn nav-btn" @click="openFeatureModal('history')">
           <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
-          <span>历史消息</span>
+          <span>历史</span>
         </button>
         <button id="btn-open-tab-worldbook" type="button" class="btn nav-btn" @click="openFeatureModal('worldbook')">
           <i class="fa-solid fa-book-open" aria-hidden="true"></i>
-          <span>世界书管理</span>
+          <span>世界书</span>
         </button>
         <button id="btn-open-tab-settings" type="button" class="btn nav-btn" @click="openFeatureModal('settings')">
           <i class="fa-solid fa-gear" aria-hidden="true"></i>
@@ -88,6 +93,7 @@
             id="input-custom-option"
             v-model="customOption"
             rows="2"
+            placeholder="输入自定义行动..."
             aria-label="自定义选项内容"
             :disabled="isBusyGenerating"
           ></textarea>
@@ -98,7 +104,7 @@
             :disabled="isBusyGenerating"
             @click="submitCustomOption"
           >
-            添加自定义选项
+            发送行动
           </button>
         </div>
       </section>
@@ -106,18 +112,9 @@
       <aside id="panel-character-status" aria-labelledby="heading-character-status" class="card panel-characters">
         <div class="char-head-row">
           <h2 id="heading-character-status">角色状态</h2>
-          <button
-            id="btn-toggle-character-dock"
-            type="button"
-            class="btn panel-mini-btn"
-            :aria-expanded="!isCharacterDockCollapsed"
-            @click="isCharacterDockCollapsed = !isCharacterDockCollapsed"
-          >
-            {{ isCharacterDockCollapsed ? '展开角色栏' : '收起角色栏' }}
-          </button>
         </div>
 
-        <ul v-show="!isCharacterDockCollapsed" id="list-character-avatars" class="avatar-list">
+        <ul id="list-character-avatars" class="avatar-list">
           <li v-for="item in characterProfiles" :key="item.key">
             <button
               :id="`avatar-item-${item.key}`"
@@ -144,17 +141,27 @@
       </aside>
     </main>
 
-    <footer id="region-quick-actions" aria-label="快捷操作" class="card quick-actions">
-      <button id="btn-toggle-fullscreen" type="button" class="btn" @click="toggleFullscreen">
-        {{ isFullscreen ? '退出全屏' : '全屏' }}
+    <footer id="region-quick-actions" aria-label="快捷操作" class="quick-actions">
+      <button id="btn-toggle-fullscreen" type="button" class="btn" title="全屏" @click="toggleFullscreen">全屏</button>
+      <button
+        id="btn-toggle-autoscroll"
+        type="button"
+        class="btn"
+        :title="settings.autoScroll ? '关闭自动滚动' : '开启自动滚动'"
+        @click="settings.autoScroll = !settings.autoScroll"
+      >
+        自动滚动
       </button>
-      <button id="btn-toggle-autoscroll" type="button" class="btn" @click="settings.autoScroll = !settings.autoScroll">
-        {{ settings.autoScroll ? '自动滚动：开' : '自动滚动：关' }}
+      <button id="btn-toggle-typewriter" type="button" class="btn" title="切换显示模式" @click="toggleDisplayMode">
+        显示模式
       </button>
-      <button id="btn-toggle-typewriter" type="button" class="btn" @click="toggleDisplayMode">
-        {{ displayModeLabel }}
-      </button>
-      <button id="btn-open-feature-modal" type="button" class="btn" @click="openFeatureModal('history')">
+      <button
+        id="btn-open-feature-modal"
+        type="button"
+        class="btn"
+        title="功能面板"
+        @click="openFeatureModal('history')"
+      >
         功能面板
       </button>
     </footer>
@@ -721,6 +728,7 @@ const isCharacterDockCollapsed = ref(false);
 const isFeatureModalVisible = ref(false);
 const activeTab = ref<FeatureTabKey>('history');
 const showPerspectiveSelector = ref(false);
+const isSplashScreenVisible = ref(true);
 const selectedPerspective = ref<PerspectiveKey | null>(null);
 const perspectiveConfirmed = ref(false);
 const customOption = ref('');
@@ -950,6 +958,11 @@ function confirmPerspective(): void {
   const mapped = perspectiveToCharacter[selectedPerspective.value];
   if (mapped) activeCharacterKey.value = mapped;
 
+  if (syncLastMessageId() === 0) {
+    rawCurrentMessage.value = getPerspectiveOpening();
+    updateOptionsFromMessage(rawCurrentMessage.value);
+  }
+
   toastr.success(`主视角已确定：${selectedPerspective.value}`);
 }
 
@@ -1155,6 +1168,10 @@ async function toggleFullscreen(): Promise<void> {
     toastr.warning('当前环境不支持全屏切换。');
     console.warn(error);
   }
+}
+
+function handleStart(): void {
+  isSplashScreenVisible.value = false;
 }
 
 function focusCurrentModalFirstItem(): void {
