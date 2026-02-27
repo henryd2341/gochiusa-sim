@@ -6,15 +6,17 @@
     :data-reduced-motion="settings.reduceMotion ? 'true' : 'false'"
     :style="pageRootStyle"
   >
+    <!-- Background Layer -->
     <div class="background-layer">
-      <div class="bg-gradient"></div>
+      <div class="bg-pattern"></div>
     </div>
 
+    <!-- Splash Screen -->
     <transition name="fade">
       <section v-if="isSplashScreenVisible" class="splash-screen">
         <div class="splash-logo animate-fadeInDown">
           <h1 class="splash-title">ご注文はうさぎですか？</h1>
-          <p class="splash-subtitle">请问您今天要来点兔子吗？</p>
+          <p class="splash-subtitle">BLOOM SIMULATOR</p>
         </div>
         <button class="press-start-btn animate-fadeInUp" @click="handleStart">
           <span class="animate-pulse">PRESS START</span>
@@ -22,452 +24,413 @@
       </section>
     </transition>
 
-    <h1 id="page-main-title" class="sr-only">点兔文字交互主页面</h1>
-
-    <header id="region-top-nav" role="banner" aria-label="顶部导航">
-      <div id="brand-logo-wrap" aria-label="品牌标识">
-        <span class="brand-main">叙事界面</span>
-        <small class="brand-sub">沉浸式文字交互</small>
+    <!-- Top Navigation -->
+    <header id="region-top-nav">
+      <div class="brand-logo">
+        <span class="brand-main">点兔叙事界面</span>
+        <span class="brand-sub">Gochiusa Narrative Interface</span>
       </div>
 
-      <nav id="nav-feature-entry" aria-label="功能入口">
-        <button id="btn-open-tab-history" type="button" class="btn nav-btn" @click="openFeatureModal('history')">
-          <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+      <div class="nav-actions">
+        <button class="nav-btn" title="历史消息" @click="openFeatureModal('history')">
+          <i class="fa-solid fa-clock-rotate-left"></i>
           <span>历史</span>
         </button>
-        <button id="btn-open-tab-worldbook" type="button" class="btn nav-btn" @click="openFeatureModal('worldbook')">
-          <i class="fa-solid fa-book-open" aria-hidden="true"></i>
+        <button class="nav-btn" title="世界书" @click="openFeatureModal('worldbook')">
+          <i class="fa-solid fa-book-open"></i>
           <span>世界书</span>
         </button>
-        <button id="btn-open-tab-settings" type="button" class="btn nav-btn" @click="openFeatureModal('settings')">
-          <i class="fa-solid fa-gear" aria-hidden="true"></i>
+        <button class="nav-btn" title="设置" @click="openFeatureModal('settings')">
+          <i class="fa-solid fa-gear"></i>
           <span>设置</span>
         </button>
-      </nav>
+      </div>
     </header>
 
-    <main id="region-main-content" role="main">
-      <section id="panel-story-feed" aria-labelledby="heading-story-feed" class="card panel-story">
-        <div class="panel-head-row">
-          <h2 id="heading-story-feed">叙事消息</h2>
-          <button
-            id="btn-refresh-story"
-            type="button"
-            class="btn panel-mini-btn"
-            @click="refreshLatestAssistantMessage"
-          >
-            同步楼层
-          </button>
+    <!-- Main Content -->
+    <main id="region-main-content">
+      <!-- Story Panel -->
+      <section class="panel-story">
+        <div class="panel-header">
+          <h2>叙事消息</h2>
+          <div class="header-tools">
+            <button class="btn nav-btn" @click="refreshLatestAssistantMessage">
+              <i class="fa-solid fa-arrows-rotate"></i>
+              <span>同步</span>
+            </button>
+          </div>
         </div>
-        <article id="story-current-message" aria-live="polite" :aria-busy="isBusyGenerating ? 'true' : 'false'">
+        <article id="story-current-message" aria-live="polite">
           {{ displayedMessage }}
         </article>
       </section>
 
-      <section id="panel-option-actions" aria-labelledby="heading-option-actions" class="card panel-options">
-        <div class="panel-head-row">
-          <h2 id="heading-option-actions">可选行动</h2>
-          <span v-if="isBusyGenerating" id="status-generating" class="status-chip" aria-live="assertive"
-            >正在生成回复</span
-          >
+      <!-- Options Panel -->
+      <section class="panel-options">
+        <div class="panel-header">
+          <h2>可选行动</h2>
+          <span v-if="isBusyGenerating" class="status-chip animate-pulse">正在生成回复...</span>
         </div>
 
-        <ul id="list-option-cards" class="option-list">
+        <ul class="option-list">
           <li v-for="(option, index) in options" :key="option.id">
-            <button
-              :id="`option-card-${String(index + 1).padStart(3, '0')}`"
-              class="btn option-card"
-              type="button"
-              :disabled="isBusyGenerating"
-              @click="handleOption(option.content)"
-            >
-              <strong>{{ option.title }}</strong>
+            <button class="option-card" :disabled="isBusyGenerating" @click="handleOption(option.content)">
+              <strong>Option {{ index + 1 }}</strong>
               <span>{{ option.content }}</span>
             </button>
           </li>
         </ul>
 
-        <div class="custom-option-row">
-          <label for="input-custom-option" class="sr-only">自定义选项内容</label>
+        <div class="custom-input-group">
           <textarea
-            id="input-custom-option"
             v-model="customOption"
-            rows="2"
             placeholder="输入自定义行动..."
-            aria-label="自定义选项内容"
             :disabled="isBusyGenerating"
+            @keydown.enter.prevent="submitCustomOption"
           ></textarea>
-          <button
-            id="btn-add-custom-option"
-            type="button"
-            class="btn"
-            :disabled="isBusyGenerating"
-            @click="submitCustomOption"
-          >
-            发送行动
+          <button class="btn-send" :disabled="isBusyGenerating" @click="submitCustomOption">
+            <i class="fa-solid fa-paper-plane"></i>
           </button>
         </div>
       </section>
-
-      <aside id="panel-character-status" aria-labelledby="heading-character-status" class="card panel-characters">
-        <div class="char-head-row">
-          <h2 id="heading-character-status">角色状态</h2>
-        </div>
-
-        <ul id="list-character-avatars" class="avatar-list">
-          <li v-for="item in characterProfiles" :key="item.key">
-            <button
-              :id="`avatar-item-${item.key}`"
-              type="button"
-              class="btn avatar-chip"
-              :style="{ '--chip-color': item.color }"
-              @click="openCharacterDetail(item.key)"
-            >
-              <span class="avatar-thumb-wrap" aria-hidden="true">
-                <img
-                  :id="`avatar-img-${item.key}`"
-                  class="avatar-thumb"
-                  :src="item.avatarUrl"
-                  :alt="`${item.name}头像`"
-                  loading="lazy"
-                  decoding="async"
-                  @error="onAvatarImageError($event, item.name)"
-                />
-              </span>
-              <span class="avatar-name">{{ item.name }}</span>
-            </button>
-          </li>
-        </ul>
-      </aside>
     </main>
 
-    <footer id="region-quick-actions" aria-label="快捷操作" class="quick-actions">
-      <button id="btn-toggle-fullscreen" type="button" class="btn" title="全屏" @click="toggleFullscreen">全屏</button>
-      <button
-        id="btn-toggle-autoscroll"
-        type="button"
-        class="btn"
-        :title="settings.autoScroll ? '关闭自动滚动' : '开启自动滚动'"
-        @click="settings.autoScroll = !settings.autoScroll"
-      >
-        自动滚动
-      </button>
-      <button id="btn-toggle-typewriter" type="button" class="btn" title="切换显示模式" @click="toggleDisplayMode">
-        显示模式
-      </button>
-      <button
-        id="btn-open-feature-modal"
-        type="button"
-        class="btn"
-        title="功能面板"
-        @click="openFeatureModal('history')"
-      >
-        功能面板
-      </button>
-    </footer>
-
-    <section
-      v-if="isFeatureModalVisible"
-      id="layer-feature-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-label="功能面板"
-      class="modal-scrim"
-      @click.self="closeFeatureModal"
-      @keydown="trapFocusInModal($event, 'layer-feature-modal')"
-    >
-      <div class="modal-shell" tabindex="-1">
-        <header class="modal-header">
-          <h2 id="modal-feature-title">功能面板</h2>
-          <button id="btn-close-feature-modal" type="button" class="btn" @click="closeFeatureModal">关闭</button>
-        </header>
-
-        <nav class="tab-nav" aria-label="功能标签页">
-          <button
-            id="modal-tab-history"
-            type="button"
-            class="btn"
-            :class="{ active: activeTab === 'history' }"
-            @click="activeTab = 'history'"
-          >
-            历史消息
-          </button>
-          <button
-            id="modal-tab-worldbook"
-            type="button"
-            class="btn"
-            :class="{ active: activeTab === 'worldbook' }"
-            @click="activeTab = 'worldbook'"
-          >
-            世界书管理
-          </button>
-          <button
-            id="modal-tab-settings"
-            type="button"
-            class="btn"
-            :class="{ active: activeTab === 'settings' }"
-            @click="activeTab = 'settings'"
-          >
-            设置
-          </button>
-          <button
-            id="modal-tab-character"
-            type="button"
-            class="btn"
-            :class="{ active: activeTab === 'character' }"
-            @click="activeTab = 'character'"
-          >
-            角色详情
-          </button>
-        </nav>
-
-        <section v-if="activeTab === 'history'" id="panel-tab-history" class="tab-panel" aria-live="polite">
-          <h3>历史消息</h3>
-          <div class="panel-tools">
-            <label for="input-history-search" class="sr-only">搜索历史消息</label>
-            <input
-              id="input-history-search"
-              v-model.trim="historyQuery"
-              type="search"
-              placeholder="输入关键字筛选历史消息"
-            />
-            <button id="btn-history-refresh" type="button" class="btn" @click="loadHistory(true)">刷新</button>
-          </div>
-
-          <ul id="list-history-messages" class="history-list">
-            <li v-for="msg in historyFilteredMessages" :key="`history-${msg.message_id}`">
-              <article :id="`history-item-${msg.message_id}`" class="history-card">
-                <header>
-                  <span class="badge">第{{ msg.message_id }}楼</span>
-                  <span class="badge muted">{{ roleLabel(msg.role) }}</span>
-                  <span class="badge muted">{{ msg.name || '未知角色' }}</span>
-                </header>
-                <p>{{ truncateText(msg.message, 160) }}</p>
-                <button
-                  :id="`btn-history-use-${msg.message_id}`"
-                  type="button"
-                  class="btn panel-mini-btn"
-                  @click="useHistoryAsCustom(msg.message)"
-                >
-                  引用到自定义选项
-                </button>
-              </article>
-            </li>
-          </ul>
-
-          <div class="panel-actions-row">
-            <button
-              id="btn-history-load-more"
-              type="button"
-              class="btn"
-              :disabled="!historyHasMore"
-              @click="loadMoreHistory"
-            >
-              加载更多
-            </button>
-          </div>
-        </section>
-
-        <section v-else-if="activeTab === 'worldbook'" id="panel-tab-worldbook" class="tab-panel" aria-live="polite">
-          <h3>世界书管理</h3>
-          <div class="panel-tools">
-            <label for="select-worldbook" class="sr-only">选择世界书</label>
-            <select id="select-worldbook" v-model="selectedWorldbookName">
-              <option v-for="name in worldbookNames" :key="name" :value="name">{{ name }}</option>
-            </select>
-            <label for="input-worldbook-search" class="sr-only">搜索世界书条目</label>
-            <input
-              id="input-worldbook-search"
-              v-model.trim="worldbookQuery"
-              type="search"
-              placeholder="搜索条目名称或内容"
-            />
-            <button id="btn-worldbook-refresh" type="button" class="btn" @click="reloadWorldbook">刷新</button>
-          </div>
-
-          <p v-if="worldbookError" class="inline-error">{{ worldbookError }}</p>
-          <p v-else-if="isWorldbookLoading" class="inline-tip">世界书读取中...</p>
-
-          <ul id="list-worldbook-entries" class="worldbook-list">
-            <li v-for="entry in filteredWorldbookEntries" :key="entry.uid">
-              <article :id="`worldbook-entry-${entry.uid}`" class="worldbook-card">
-                <header>
-                  <strong>{{ entry.name || `未命名条目-${entry.uid}` }}</strong>
-                  <button
-                    :id="`btn-worldbook-toggle-${entry.uid}`"
-                    type="button"
-                    class="btn panel-mini-btn"
-                    @click="toggleWorldbookEntryState(entry.uid, !entry.enabled)"
-                  >
-                    {{ entry.enabled ? '已启用' : '已禁用' }}
-                  </button>
-                </header>
-                <p>{{ truncateText(entry.content, 120) }}</p>
-                <div class="entry-meta">
-                  <span>策略：{{ entry.strategy.type }}</span>
-                  <span>概率：{{ entry.probability }}%</span>
-                </div>
-              </article>
-            </li>
-          </ul>
-        </section>
-
-        <section v-else-if="activeTab === 'settings'" id="panel-tab-settings" class="tab-panel" aria-live="polite">
-          <h3>设置</h3>
-          <form id="form-ui-settings" class="settings-grid" @submit.prevent>
-            <fieldset class="setting-group">
-              <legend>主题风格</legend>
-              <label>
-                <input id="radio-theme-latte" v-model="settings.theme" type="radio" value="theme-latte-noir" />
-                奶油白昼
-              </label>
-              <label>
-                <input id="radio-theme-midnight" v-model="settings.theme" type="radio" value="theme-midnight-salon" />
-                午夜沙龙
-              </label>
-            </fieldset>
-
-            <fieldset class="setting-group">
-              <legend>消息显示</legend>
-              <label>
-                <input id="radio-mode-instant" v-model="settings.displayMode" type="radio" value="instant" />
-                即时显示
-              </label>
-              <label>
-                <input id="radio-mode-typewriter" v-model="settings.displayMode" type="radio" value="typewriter" />
-                打字机
-              </label>
-              <label>
-                <input id="radio-mode-segment" v-model="settings.displayMode" type="radio" value="segment" />
-                分段显示
-              </label>
-            </fieldset>
-
-            <fieldset class="setting-group">
-              <legend>字体大小</legend>
-              <label>
-                <input id="radio-font-small" v-model="settings.fontScale" type="radio" value="small" />
-                小
-              </label>
-              <label>
-                <input id="radio-font-medium" v-model="settings.fontScale" type="radio" value="medium" />
-                中
-              </label>
-              <label>
-                <input id="radio-font-large" v-model="settings.fontScale" type="radio" value="large" />
-                大
-              </label>
-            </fieldset>
-
-            <fieldset class="setting-group">
-              <legend>交互偏好</legend>
-              <label>
-                <input id="check-auto-scroll" v-model="settings.autoScroll" type="checkbox" />
-                自动滚动
-              </label>
-              <label>
-                <input id="check-reduced-motion" v-model="settings.reduceMotion" type="checkbox" />
-                减少动效
-              </label>
-            </fieldset>
-          </form>
-          <div class="panel-actions-row">
-            <button id="btn-reset-settings" type="button" class="btn" @click="resetSettings">重置默认设置</button>
-          </div>
-        </section>
-
-        <section v-else id="panel-tab-character" class="tab-panel" aria-live="polite">
-          <h3>角色详情</h3>
-          <div class="character-panel">
-            <ul class="character-selector">
-              <li v-for="item in characterProfiles" :key="`detail-${item.key}`">
-                <button
-                  :id="`btn-character-focus-${item.key}`"
-                  type="button"
-                  class="btn"
-                  :class="{ active: activeCharacterKey === item.key }"
-                  @click="activeCharacterKey = item.key"
-                >
-                  {{ item.name }}
-                </button>
-              </li>
-            </ul>
-
-            <article id="panel-character-detail-card" class="character-detail-card">
-              <div class="character-hero" aria-hidden="true">
-                <img
-                  id="img-character-detail"
-                  :src="activeCharacter.avatarUrl"
-                  :alt="`${activeCharacter.name}立绘`"
-                  loading="lazy"
-                  decoding="async"
-                  @error="onAvatarImageError($event, activeCharacter.name)"
-                />
-              </div>
-              <h4>{{ activeCharacter.name }}</h4>
-              <p>{{ activeCharacter.summary }}</p>
-              <dl>
-                <dt>心情</dt>
-                <dd>{{ activeCharacterState.mood }}</dd>
-                <dt>位置</dt>
-                <dd>{{ activeCharacterState.location }}</dd>
-                <dt>着装</dt>
-                <dd>{{ activeCharacterState.outfit }}</dd>
-                <dt>关系</dt>
-                <dd>{{ activeCharacterState.relation }}</dd>
-              </dl>
-            </article>
-          </div>
-        </section>
-      </div>
-    </section>
-
-    <section
-      v-if="showPerspectiveSelector"
-      id="layer-perspective-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-label="主视角选择"
-      class="modal-scrim perspective"
-      @keydown="trapFocusInModal($event, 'layer-perspective-modal')"
-    >
-      <div class="modal-shell perspective-shell" tabindex="-1">
-        <header class="modal-header">
-          <h2 id="heading-perspective-selector">请选择主视角</h2>
-        </header>
-        <p class="perspective-tip">首次进入当前聊天且最高楼层为0时，需要先选择主视角后再发送行动。</p>
-
-        <ul class="perspective-list">
-          <li v-for="item in perspectiveEntries" :key="item.key">
-            <button
-              :id="`btn-select-perspective-${item.key}`"
-              type="button"
-              class="btn perspective-card"
-              :class="{ active: selectedPerspective === item.key }"
-              @click="selectedPerspective = item.key"
-            >
-              <strong>{{ item.key }}</strong>
-              <span>{{ item.description }}</span>
-            </button>
-          </li>
-        </ul>
-
-        <div class="opening-preview-wrap" aria-live="polite">
-          <h3 id="heading-opening-preview">开场白预览</h3>
-          <p id="text-opening-preview">{{ selectedOpeningPreview }}</p>
-        </div>
-
-        <button
-          id="btn-confirm-perspective"
-          type="button"
-          class="btn confirm-btn"
-          :disabled="!selectedPerspective"
-          @click="confirmPerspective"
+    <!-- Bottom Character Bar -->
+    <footer id="region-character-bar">
+      <div class="character-scroll">
+        <div
+          v-for="item in characterProfiles"
+          :key="item.key"
+          class="char-chip"
+          :style="{ '--chip-color': item.color }"
+          @click="openCharacterDetail(item.key)"
         >
-          确认主视角
+          <div class="char-avatar">
+            <img :src="item.avatarUrl" :alt="item.name" @error="onAvatarImageError($event, item.name)" />
+          </div>
+          <span class="char-name">{{ item.name }}</span>
+        </div>
+      </div>
+
+      <div class="quick-actions-mini">
+        <button class="mini-btn" :title="isFullscreen ? '退出全屏' : '全屏'" @click="toggleFullscreen">
+          <i class="fa-solid" :class="isFullscreen ? 'fa-compress' : 'fa-expand'"></i>
+        </button>
+        <button
+          class="mini-btn"
+          :title="settings.autoScroll ? '关闭自动滚动' : '开启自动滚动'"
+          @click="settings.autoScroll = !settings.autoScroll"
+        >
+          <i class="fa-solid" :class="settings.autoScroll ? 'fa-angles-down' : 'fa-minus'"></i>
+        </button>
+        <button class="mini-btn" title="切换显示模式" @click="toggleDisplayMode">
+          <i class="fa-solid fa-font"></i>
         </button>
       </div>
-    </section>
+    </footer>
+
+    <!-- Modals -->
+    <transition name="fade">
+      <div v-if="isFeatureModalVisible" class="modal-scrim" @click.self="closeFeatureModal">
+        <div class="modal-shell">
+          <header class="modal-header">
+            <h2>{{ modalTitle }}</h2>
+            <button class="nav-btn" @click="closeFeatureModal"><i class="fa-solid fa-xmark"></i></button>
+          </header>
+
+          <nav
+            class="tab-nav"
+            style="display: flex; padding: 10px; gap: 10px; border-bottom: 1px solid var(--line-soft)"
+          >
+            <button
+              v-for="tab in tabs"
+              :key="tab.key"
+              class="btn"
+              :class="{ active: activeTab === tab.key }"
+              style="
+                flex: 1;
+                padding: 8px;
+                border-radius: 8px;
+                border: 1px solid var(--line-soft);
+                background: none;
+                cursor: pointer;
+              "
+              @click="activeTab = tab.key"
+            >
+              {{ tab.label }}
+            </button>
+          </nav>
+
+          <div class="modal-body">
+            <!-- History Tab -->
+            <div v-if="activeTab === 'history'" class="tab-panel">
+              <div class="panel-tools" style="display: flex; gap: 10px; margin-bottom: 15px">
+                <input
+                  v-model.trim="historyQuery"
+                  type="search"
+                  placeholder="搜索历史消息..."
+                  style="flex: 1; padding: 8px; border-radius: 8px; border: 1px solid var(--line-soft)"
+                />
+                <button class="btn" @click="loadHistory(true)">刷新</button>
+              </div>
+              <div class="history-list" style="display: flex; flex-direction: column; gap: 10px">
+                <div
+                  v-for="msg in historyFilteredMessages"
+                  :key="msg.message_id"
+                  class="card"
+                  style="padding: 15px; border: 1px solid var(--line-soft); border-radius: 12px; background: white"
+                >
+                  <div
+                    style="
+                      display: flex;
+                      justify-content: space-between;
+                      margin-bottom: 8px;
+                      font-size: 0.85rem;
+                      color: var(--ink-1);
+                    "
+                  >
+                    <span>#{{ msg.message_id }} {{ msg.name || roleLabel(msg.role) }}</span>
+                  </div>
+                  <p style="font-size: 0.95rem; margin-bottom: 10px">{{ truncateText(msg.message, 200) }}</p>
+                  <button
+                    class="btn"
+                    style="font-size: 0.8rem; padding: 4px 10px"
+                    @click="useHistoryAsCustom(msg.message)"
+                  >
+                    引用
+                  </button>
+                </div>
+                <button v-if="historyHasMore" class="btn" @click="loadMoreHistory">加载更多</button>
+              </div>
+            </div>
+
+            <!-- Worldbook Tab -->
+            <div v-else-if="activeTab === 'worldbook'" class="tab-panel">
+              <div class="panel-tools" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px">
+                <select
+                  v-model="selectedWorldbookName"
+                  style="padding: 8px; border-radius: 8px; border: 1px solid var(--line-soft)"
+                >
+                  <option v-for="name in worldbookNames" :key="name" :value="name">{{ name }}</option>
+                </select>
+                <input
+                  v-model.trim="worldbookQuery"
+                  type="search"
+                  placeholder="搜索条目..."
+                  style="padding: 8px; border-radius: 8px; border: 1px solid var(--line-soft)"
+                />
+              </div>
+              <div class="worldbook-list" style="display: flex; flex-direction: column; gap: 10px">
+                <div
+                  v-for="entry in filteredWorldbookEntries"
+                  :key="entry.uid"
+                  class="card"
+                  style="padding: 15px; border: 1px solid var(--line-soft); border-radius: 12px; background: white"
+                >
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px">
+                    <strong style="color: var(--accent-gold)">{{ entry.name }}</strong>
+                    <button
+                      class="btn"
+                      :style="{ color: entry.enabled ? 'green' : 'red' }"
+                      @click="toggleWorldbookEntryState(entry.uid, !entry.enabled)"
+                    >
+                      {{ entry.enabled ? '已启用' : '已禁用' }}
+                    </button>
+                  </div>
+                  <p style="font-size: 0.9rem; color: var(--ink-1)">{{ truncateText(entry.content, 150) }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div v-else-if="activeTab === 'settings'" class="tab-panel">
+              <div class="settings-grid" style="display: flex; flex-direction: column; gap: 20px">
+                <div class="setting-item">
+                  <label style="display: block; margin-bottom: 8px; font-weight: 600">主题风格</label>
+                  <div style="display: flex; gap: 10px">
+                    <button
+                      class="btn"
+                      :class="{ active: settings.theme === 'theme-latte-noir' }"
+                      @click="settings.theme = 'theme-latte-noir'"
+                    >
+                      奶油白昼
+                    </button>
+                    <button
+                      class="btn"
+                      :class="{ active: settings.theme === 'theme-midnight-salon' }"
+                      @click="settings.theme = 'theme-midnight-salon'"
+                    >
+                      午夜沙龙
+                    </button>
+                  </div>
+                </div>
+                <div class="setting-item">
+                  <label style="display: block; margin-bottom: 8px; font-weight: 600">显示模式</label>
+                  <div style="display: flex; gap: 10px">
+                    <button
+                      class="btn"
+                      :class="{ active: settings.displayMode === 'instant' }"
+                      @click="settings.displayMode = 'instant'"
+                    >
+                      即时
+                    </button>
+                    <button
+                      class="btn"
+                      :class="{ active: settings.displayMode === 'typewriter' }"
+                      @click="settings.displayMode = 'typewriter'"
+                    >
+                      打字机
+                    </button>
+                    <button
+                      class="btn"
+                      :class="{ active: settings.displayMode === 'segment' }"
+                      @click="settings.displayMode = 'segment'"
+                    >
+                      分段
+                    </button>
+                  </div>
+                </div>
+                <div class="setting-item">
+                  <label style="display: block; margin-bottom: 8px; font-weight: 600">字体大小</label>
+                  <div style="display: flex; gap: 10px">
+                    <button
+                      class="btn"
+                      :class="{ active: settings.fontScale === 'small' }"
+                      @click="settings.fontScale = 'small'"
+                    >
+                      小
+                    </button>
+                    <button
+                      class="btn"
+                      :class="{ active: settings.fontScale === 'medium' }"
+                      @click="settings.fontScale = 'medium'"
+                    >
+                      中
+                    </button>
+                    <button
+                      class="btn"
+                      :class="{ active: settings.fontScale === 'large' }"
+                      @click="settings.fontScale = 'large'"
+                    >
+                      大
+                    </button>
+                  </div>
+                </div>
+                <button
+                  class="btn"
+                  style="margin-top: 20px; background: #ff4d4f; color: white; border: none"
+                  @click="resetSettings"
+                >
+                  重置所有设置
+                </button>
+              </div>
+            </div>
+
+            <!-- Character Tab -->
+            <div v-else-if="activeTab === 'character'" class="tab-panel">
+              <div style="display: flex; gap: 20px; flex-direction: column">
+                <div style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px">
+                  <button
+                    v-for="item in characterProfiles"
+                    :key="item.key"
+                    class="btn"
+                    :class="{ active: activeCharacterKey === item.key }"
+                    @click="activeCharacterKey = item.key"
+                  >
+                    {{ item.name }}
+                  </button>
+                </div>
+                <div
+                  class="card"
+                  style="padding: 20px; border: 1px solid var(--line-soft); border-radius: 16px; background: white"
+                >
+                  <div style="display: flex; gap: 20px; align-items: flex-start">
+                    <img
+                      :src="activeCharacter.avatarUrl"
+                      style="
+                        width: 100px;
+                        height: 100px;
+                        border-radius: 12px;
+                        object-fit: cover;
+                        border: 2px solid var(--accent-gold);
+                      "
+                    />
+                    <div>
+                      <h3 style="margin-bottom: 5px; color: var(--accent-gold)">{{ activeCharacter.name }}</h3>
+                      <p style="font-size: 0.9rem; color: var(--ink-1)">{{ activeCharacter.summary }}</p>
+                    </div>
+                  </div>
+                  <div style="margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px">
+                    <div v-for="(val, label) in activeCharacterState" :key="label">
+                      <span style="display: block; font-size: 0.8rem; color: var(--ink-muted)">{{ label }}</span>
+                      <span style="font-weight: 600">{{ val }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Perspective Selector -->
+    <transition name="fade">
+      <div v-if="showPerspectiveSelector" class="modal-scrim">
+        <div class="modal-shell" style="max-width: 800px">
+          <header class="modal-header">
+            <h2>请选择主视角</h2>
+          </header>
+          <div class="modal-body">
+            <p style="margin-bottom: 20px; color: var(--ink-1)">
+              首次进入当前聊天，请选择一个主视角以注入对应的开场白。
+            </p>
+            <div
+              style="
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                gap: 15px;
+                margin-bottom: 30px;
+              "
+            >
+              <button
+                v-for="item in perspectiveEntries"
+                :key="item.key"
+                class="card"
+                :style="{
+                  border:
+                    selectedPerspective === item.key ? '2px solid var(--accent-gold)' : '1px solid var(--line-soft)',
+                  padding: '15px',
+                  cursor: 'pointer',
+                  background: 'white',
+                  textAlign: 'left',
+                }"
+                @click="selectedPerspective = item.key"
+              >
+                <strong style="display: block; margin-bottom: 5px; color: var(--accent-gold)">{{ item.key }}</strong>
+                <span style="font-size: 0.85rem; color: var(--ink-1)">{{ item.description }}</span>
+              </button>
+            </div>
+            <div
+              v-if="selectedPerspective"
+              class="card"
+              style="padding: 20px; background: var(--bg-1); border-radius: 12px; margin-bottom: 20px"
+            >
+              <h3 style="font-size: 0.9rem; margin-bottom: 10px; color: var(--ink-1)">开场白预览：</h3>
+              <p style="font-family: 'Noto Serif SC', serif; line-height: 1.6">{{ selectedOpeningPreview }}</p>
+            </div>
+            <button
+              class="btn-send"
+              style="width: 100%; padding: 15px; font-size: 1.1rem"
+              :disabled="!selectedPerspective"
+              @click="confirmPerspective"
+            >
+              确认并开始故事
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -724,7 +687,6 @@ function extractRoleplayOptions(message: string): RoleplayOption[] {
 const openingConfig = normalizeOpeningConfig(openingConfigRaw);
 const settings = ref<UISettings>(loadSettings());
 
-const isCharacterDockCollapsed = ref(false);
 const isFeatureModalVisible = ref(false);
 const activeTab = ref<FeatureTabKey>('history');
 const showPerspectiveSelector = ref(false);
@@ -759,6 +721,17 @@ const options = ref<RoleplayOption[]>([
   { id: 'opt-003', title: '主动搭话', content: '你选择与当前出场角色展开一段自然交流。' },
 ]);
 
+const tabs: { key: FeatureTabKey; label: string }[] = [
+  { key: 'history', label: '历史消息' },
+  { key: 'worldbook', label: '世界书' },
+  { key: 'settings', label: '设置' },
+  { key: 'character', label: '角色详情' },
+];
+
+const modalTitle = computed(() => {
+  return tabs.find(t => t.key === activeTab.value)?.label || '功能面板';
+});
+
 const fontScaleMap: Record<FontScale, string> = {
   small: '0.92',
   medium: '1',
@@ -780,12 +753,6 @@ const selectedOpeningPreview = computed(() => {
   const key = selectedPerspective.value;
   if (!key) return '请选择一个主视角后查看对应开场白。';
   return openingConfig.perspectives[key].opening;
-});
-
-const displayModeLabel = computed(() => {
-  if (settings.value.displayMode === 'typewriter') return '显示模式：打字机';
-  if (settings.value.displayMode === 'segment') return '显示模式：分段';
-  return '显示模式：即时';
 });
 
 const historyFilteredMessages = computed(() => {
@@ -847,10 +814,10 @@ const activeCharacterState = computed(() => {
     profile.relation;
 
   return {
-    mood: String(mood),
-    location: String(location),
-    outfit: String(outfit),
-    relation: String(relation),
+    当前心情: String(mood),
+    所在位置: String(location),
+    当前着装: String(outfit),
+    关系状态: String(relation),
   };
 });
 
@@ -1174,28 +1141,10 @@ function handleStart(): void {
   isSplashScreenVisible.value = false;
 }
 
-function focusCurrentModalFirstItem(): void {
-  nextTick(() => {
-    if (showPerspectiveSelector.value) {
-      const selector =
-        document.getElementById('btn-select-perspective-心爱') ?? document.getElementById('btn-confirm-perspective');
-      selector?.focus();
-      return;
-    }
-
-    if (isFeatureModalVisible.value) {
-      const target =
-        document.getElementById(`modal-tab-${activeTab.value}`) ?? document.getElementById('btn-close-feature-modal');
-      target?.focus();
-    }
-  });
-}
-
 function openFeatureModal(tab: FeatureTabKey): void {
   lastFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   activeTab.value = tab;
   isFeatureModalVisible.value = true;
-  focusCurrentModalFirstItem();
 }
 
 function closeFeatureModal(): void {
@@ -1208,28 +1157,6 @@ function closeFeatureModal(): void {
 function openCharacterDetail(characterKey: string): void {
   activeCharacterKey.value = characterKey;
   openFeatureModal('character');
-}
-
-function trapFocusInModal(event: KeyboardEvent, modalId: string): void {
-  if (event.key !== 'Tab') return;
-
-  const modal = document.getElementById(modalId);
-  if (!modal) return;
-
-  const selectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
-  const focusable = [...modal.querySelectorAll<HTMLElement>(selectors)].filter(item => !item.hasAttribute('disabled'));
-  if (!focusable.length) return;
-
-  const first = focusable[0];
-  const last = focusable[focusable.length - 1];
-
-  if (event.shiftKey && document.activeElement === first) {
-    event.preventDefault();
-    last.focus();
-  } else if (!event.shiftKey && document.activeElement === last) {
-    event.preventDefault();
-    first.focus();
-  }
 }
 
 function onGlobalKeydown(event: KeyboardEvent): void {
@@ -1255,10 +1182,6 @@ async function initializeForCurrentChat(): Promise<void> {
   loadHistory(true);
   refreshChatVariablesSnapshot();
   await reloadWorldbook();
-
-  if (showPerspectiveSelector.value) {
-    focusCurrentModalFirstItem();
-  }
 }
 
 watch(
