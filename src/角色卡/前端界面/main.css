@@ -134,8 +134,9 @@ body {
 }
 
 .splash-logo img {
-  width: 60%;
+  width: 75%;
   height: auto;
+  display: inline-flex;
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
 }
 
@@ -189,6 +190,11 @@ body {
   z-index: 100;
 }
 
+.header-tools {
+  display: flex;
+  flex-direction: row;
+}
+
 .brand-logo {
   display: flex;
   flex-direction: column;
@@ -239,7 +245,7 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: auto;
   max-width: 1000px;
   margin: 0 auto;
   width: 100%;
@@ -258,8 +264,9 @@ body {
   border-radius: 20px;
   border: 1px solid var(--line-soft);
   min-height: 0;
+  max-height: 50%;
   box-shadow: var(--shadow-md);
-  overflow: hidden;
+  overflow: auto;
 }
 
 .panel-header {
@@ -287,6 +294,33 @@ body {
   line-height: 1.8;
   color: var(--ink-0);
   white-space: pre-wrap;
+}
+
+.edit-last-message {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  min-height: 0;
+  gap: 16px;
+}
+
+.edit-last-message .edit-textarea {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 100%;
+  min-height: 120px;
+  font-family: 'Noto Serif SC', serif;
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
+
+.edit-last-message .edit-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
 }
 
 .variables-log {
@@ -508,7 +542,7 @@ input:checked + .slider:before {
 }
 
 .character-scroll::-webkit-scrollbar {
-  display: none;
+  display: flex;
 }
 
 .char-chip {

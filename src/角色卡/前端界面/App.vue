@@ -15,7 +15,7 @@
     <transition name="fade">
       <section v-if="isSplashScreenVisible" class="splash-screen">
         <div class="splash-logo animate-fadeInDown">
-          <img src="./assets/icons/title_brown.svg" />
+          <img :src="titleBrownLogo" />
         </div>
         <button class="press-start-btn animate-fadeInUp" @click="handleStart">
           <span class="animate-pulse">PRESS START</span>
@@ -65,23 +65,29 @@
               <i class="fa-solid fa-pen-to-square"></i>
               <span>编辑</span>
             </button>
-            <button class="btn nav-btn" :disabled="!editingMessageText.trim()" @click="saveEditedMessage">
-              <i class="fa-solid fa-floppy-disk"></i>
-              <span>保存编辑</span>
-            </button>
           </div>
         </div>
-        <article id="story-current-message" aria-live="polite">
+        <article v-show="!isEditingMessageVisible" id="story-current-message" aria-live="polite">
           {{ displayedMessage }}
         </article>
-        <div v-if="isEditingMessageVisible" class="edit-last-message">
+        <div v-if="isEditingMessageVisible" id="edit-last-message" class="edit-last-message">
           <label for="edit-last-message-textarea" class="sr-only">编辑上一条消息</label>
           <textarea
             id="edit-last-message-textarea"
             v-model="editingMessageText"
-            rows="4"
+            class="edit-textarea"
             placeholder="在此编辑上一条消息内容..."
           ></textarea>
+          <div class="edit-actions">
+            <button class="btn nav-btn" :disabled="!editingMessageText.trim()" @click="saveEditedMessage">
+              <i class="fa-solid fa-floppy-disk"></i>
+              <span>保存编辑</span>
+            </button>
+            <button class="btn nav-btn" @click="cancelEdit">
+              <i class="fa-solid fa-xmark"></i>
+              <span>取消编辑</span>
+            </button>
+          </div>
         </div>
       </section>
 
@@ -404,6 +410,7 @@
                         height: 100px;
                         border-radius: 12px;
                         object-fit: cover;
+                        flex-shrink: 0;
                         border: 2px solid var(--accent-gold);
                       "
                     />
@@ -421,64 +428,6 @@
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </transition>
-
-    <!-- Perspective Selector -->
-    <transition name="fade">
-      <div v-if="showPerspectiveSelector" class="modal-scrim">
-        <div class="modal-shell" style="max-width: 800px">
-          <header class="modal-header">
-            <h2>请选择主视角</h2>
-          </header>
-          <div class="modal-body">
-            <p style="margin-bottom: 20px; color: var(--ink-1)">
-              首次进入当前聊天，请选择一个主视角以注入对应的开场白。
-            </p>
-            <div
-              style="
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-                gap: 15px;
-                margin-bottom: 30px;
-              "
-            >
-              <button
-                v-for="item in perspectiveEntries"
-                :key="item.key"
-                class="card"
-                :style="{
-                  border:
-                    selectedPerspective === item.key ? '2px solid var(--accent-gold)' : '1px solid var(--line-soft)',
-                  padding: '15px',
-                  cursor: 'pointer',
-                  background: 'white',
-                  textAlign: 'left',
-                }"
-                @click="selectedPerspective = item.key"
-              >
-                <strong style="display: block; margin-bottom: 5px; color: var(--accent-gold)">{{ item.key }}</strong>
-                <span style="font-size: 0.85rem; color: var(--ink-1)">{{ item.description }}</span>
-              </button>
-            </div>
-            <div
-              v-if="selectedPerspective"
-              class="card"
-              style="padding: 20px; background: var(--bg-1); border-radius: 12px; margin-bottom: 20px"
-            >
-              <h3 style="font-size: 0.9rem; margin-bottom: 10px; color: var(--ink-1)">开场白预览：</h3>
-              <p style="font-family: 'Noto Serif SC', serif; line-height: 1.6">{{ selectedOpeningPreview }}</p>
-            </div>
-            <button
-              class="btn-send"
-              style="width: 100%; padding: 15px; font-size: 1.1rem"
-              :disabled="!selectedPerspective"
-              @click="confirmPerspective"
-            >
-              确认并开始故事
-            </button>
           </div>
         </div>
       </div>
@@ -505,24 +454,14 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import openingConfigRaw from './config/opening_by_perspective.yaml';
+import titleBrownLogo from './assets/icons/title_brown.svg?url';
 const editingMessageText = ref('');
-// const lastMessageRaw = ref<ChatMessage | null>(null);
+const lastMessageRaw = ref<ChatMessage | null>(null);
 
 type FeatureTabKey = 'history' | 'worldbook' | 'settings' | 'character';
 type DisplayMode = 'instant' | 'typewriter' | 'segment';
 type ThemeMode = 'theme-latte-noir' | 'theme-midnight-salon';
 type FontScale = 'small' | 'medium' | 'large';
-type PerspectiveKey = '保登心爱' | '香风智乃' | '天天座理世' | '宇治松千夜' | '桐间纱路' | '无';
-
-type PerspectiveEntry = {
-  description: string;
-  opening: string;
-};
-
-type OpeningConfig = {
-  perspectives: Record<PerspectiveKey, PerspectiveEntry>;
-};
 
 type RoleplayOption = {
   id: string;
@@ -550,37 +489,6 @@ type CharacterProfile = {
   keyItems: string;
 };
 
-const perspectiveKeys: PerspectiveKey[] = ['保登心爱', '香风智乃', '天天座理世', '宇治松千夜', '桐间纱路', '无'];
-
-const fallbackOpeningConfig: OpeningConfig = {
-  perspectives: {
-    保登心爱: {
-      description: '以保登心爱的情绪与语气观察事件发展，优先关注热情、主动与当下氛围。',
-      opening: '',
-    },
-    香风智乃: {
-      description: '以香风智乃的克制与细腻感知推进剧情，优先关注细节与隐含情绪变化。',
-      opening: '',
-    },
-    天天座理世: {
-      description: '以天天座理世的执行力推进剧情，优先处理秩序、任务与突发状况。',
-      opening: '',
-    },
-    宇治松千夜: {
-      description: '以宇治松千夜的温婉风格观察互动，优先关注礼节、安抚与氛围调和。',
-      opening: '',
-    },
-    桐间纱路: {
-      description: '以桐间纱路的谨慎与责任感参与剧情，优先关注风险与规则边界。',
-      opening: '',
-    },
-    无: {
-      description: '使用中立视角，不绑定具体角色语气，更适合观察多角色并行叙事。',
-      opening: '',
-    },
-  },
-};
-
 const defaultSettings: UISettings = {
   theme: 'theme-latte-noir',
   displayMode: 'instant',
@@ -590,7 +498,6 @@ const defaultSettings: UISettings = {
 };
 
 const SETTINGS_STORAGE_KEY = 'gochiusa.frontend.settings.v2';
-const PERSPECTIVE_VAR_PATH = '_主视角';
 
 function catboxImage(code: string): string {
   return `https://files.catbox.moe/${code}.png`;
@@ -602,7 +509,7 @@ const characterProfiles: CharacterProfile[] = [
     name: '保登心爱',
     color: 'var(--clr-cocoa)',
     avatarUrl: catboxImage('qjltca'),
-    summary: '活力型引导角色，擅长快速拉近关系并推动场景气氛。',
+    summary: 'Rabbit House寄宿店员。喜欢毛茸茸的东西。把智乃视为妹妹一样的存在。名字源自于热可可（Hot Cocoa）。',
     mood: '元气满满',
     location: 'Rabbit House 一楼吧台',
     outfit: 'Rabbit House店员服，佩戴肉桂粉色花朵发饰',
@@ -613,7 +520,8 @@ const characterProfiles: CharacterProfile[] = [
     name: '香风智乃',
     color: 'var(--clr-chino)',
     avatarUrl: catboxImage('6t09pw'),
-    summary: '观察型角色，擅长在安静场景中提供高价值细节。',
+    summary:
+      'Rabbit House家的独生女。性格冷淡的无口系少女，独立能力强但不擅长与人相处。在咖啡方面有着渊博的知识。名字源自于卡布奇诺。',
     mood: '平静',
     location: 'Rabbit House 一楼吧台',
     outfit: 'Rabbit House店员服',
@@ -624,7 +532,8 @@ const characterProfiles: CharacterProfile[] = [
     name: '天天座理世',
     color: 'var(--clr-rize)',
     avatarUrl: catboxImage('n9szhx'),
-    summary: '执行型角色，擅长处理节奏与秩序相关场景。',
+    summary:
+      '在Rabbit House打工的店员。平时是个会携带武器的、浑身散发着军人气质的强力角色，内心里却也有着少女的一面。名字源自于法国熏香加味绿茶夏日香气（Thé Des Alizés）。',
     mood: '自信',
     location: 'Rabbit House 一楼吧台',
     outfit: 'Rabbit House店员服',
@@ -635,7 +544,8 @@ const characterProfiles: CharacterProfile[] = [
     name: '宇治松千夜',
     color: 'var(--clr-chiya)',
     avatarUrl: catboxImage('v4spnt'),
-    summary: '情绪调和型角色，擅长缓冲冲突与提升舒适感。',
+    summary:
+      '和风甜品店甘兔庵的看板娘。有着大和抚子的相貌和气质。兴趣是为菜品起各种各样古怪的名字。名字源自于宇治抹茶。',
     mood: '温柔',
     location: '甘兔庵',
     outfit: '甘兔庵和服',
@@ -646,7 +556,8 @@ const characterProfiles: CharacterProfile[] = [
     name: '桐间纱路',
     color: 'var(--clr-syaro)',
     avatarUrl: catboxImage('b982xz'),
-    summary: '谨慎型角色，适合调查、推理与高压交互场景。',
+    summary:
+      '在Fleur du Lapin打工的店员，千夜的发小。有着贵族大小姐一般的气质，却过着简朴的生活。也有着害怕兔子以及容易醉咖啡的一面。名字源自于乞力马扎罗咖啡（Kilimanjaro）。',
     mood: '平静',
     location: 'Fleur de Lapin',
     outfit: 'Fleur de Lapin店员服',
@@ -753,42 +664,6 @@ const characterProfiles: CharacterProfile[] = [
   },
 ];
 
-const perspectiveToCharacter: Record<PerspectiveKey, string> = {
-  保登心爱: 'cocoa',
-  香风智乃: 'chino',
-  天天座理世: 'rize',
-  宇治松千夜: 'chiya',
-  桐间纱路: 'syaro',
-  无: 'cocoa',
-};
-
-function isPerspectiveKey(value: unknown): value is PerspectiveKey {
-  return perspectiveKeys.includes(value as PerspectiveKey);
-}
-
-function normalizeOpeningConfig(input: unknown): OpeningConfig {
-  const base = _.cloneDeep(fallbackOpeningConfig);
-  if (!input || typeof input !== 'object') return base;
-
-  const raw = (input as { perspectives?: Record<string, PerspectiveEntry> }).perspectives;
-  if (!raw || typeof raw !== 'object') return base;
-
-  perspectiveKeys.forEach(key => {
-    const candidate = raw[key];
-    if (
-      candidate &&
-      typeof candidate.description === 'string' &&
-      candidate.description.trim().length > 0 &&
-      typeof candidate.opening === 'string' &&
-      candidate.opening.trim().length > 0
-    ) {
-      base.perspectives[key] = { description: candidate.description, opening: candidate.opening };
-    }
-  });
-
-  return base;
-}
-
 function loadSettings(): UISettings {
   try {
     const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
@@ -854,20 +729,15 @@ function extractRoleplayOptions(message: string): RoleplayOption[] {
   }));
 }
 
-const openingConfig = normalizeOpeningConfig(openingConfigRaw);
 const settings = ref<UISettings>(loadSettings());
 
 const isFeatureModalVisible = ref(false);
 const activeTab = ref<FeatureTabKey>('history');
-const showPerspectiveSelector = ref(false);
 const isSplashScreenVisible = ref(true);
-const selectedPerspective = ref<PerspectiveKey | null>(null);
-const perspectiveConfirmed = ref(false);
 const customOption = ref('');
 const isFullscreen = ref(false);
 const isBusyGenerating = ref(false);
 const selectedEntry = ref<WorldbookEntry | null>(null);
-const lastMessageRaw = ref<ChatMessage | null>(null);
 
 const rawCurrentMessage = ref('正在等待剧情推进，请选择下一步行动。');
 const displayedMessage = ref('正在等待剧情推进，请选择下一步行动。');
@@ -954,19 +824,6 @@ const sortedOptions = computed(() => {
   const dynamic = options.value.filter(o => o.id.startsWith('opt-dynamic'));
   const custom = options.value.filter(o => !o.id.startsWith('opt-dynamic'));
   return [...dynamic, ...custom];
-});
-
-const perspectiveEntries = computed(() => {
-  return perspectiveKeys.map(key => ({
-    key,
-    ...openingConfig.perspectives[key],
-  }));
-});
-
-const selectedOpeningPreview = computed(() => {
-  const key = selectedPerspective.value;
-  if (!key) return '请选择一个主视角后查看对应开场白。';
-  return openingConfig.perspectives[key].opening;
 });
 
 const historyFilteredMessages = computed(() => {
@@ -1107,88 +964,10 @@ function toggleDisplayMode(): void {
   settings.value.displayMode = chain[(index + 1) % chain.length];
 }
 
-function readPerspectiveFromChatVariables(): PerspectiveKey | null {
-  try {
-    // 优先从当前楼层的 MVU 变量中读取
-    const mvuVars = getVariables({ type: 'message', message_id: getCurrentMessageId() });
-    const mvuValue = _.get(mvuVars, `stat_data.${PERSPECTIVE_VAR_PATH}`);
-    if (isPerspectiveKey(mvuValue)) return mvuValue;
-  } catch {
-    // 忽略 MVU 不可用时的错误
-  }
-
-  try {
-    const vars = getVariables({ type: 'chat' });
-    const value = _.get(vars, PERSPECTIVE_VAR_PATH);
-    return isPerspectiveKey(value) ? value : null;
-  } catch {
-    return null;
-  }
-}
-
 function syncLastMessageId(): number {
   const value = getLastMessageId();
   lastMessageId.value = value;
   return value;
-}
-
-function persistPerspectiveToChatVariables(value: PerspectiveKey): void {
-  try {
-    updateVariablesWith(
-      vars => {
-        _.set(vars, PERSPECTIVE_VAR_PATH, value);
-        return vars;
-      },
-      { type: 'chat' },
-    );
-  } catch (error) {
-    console.warn('保存主视角到聊天变量失败:', error);
-  }
-}
-
-function persistPerspectiveToMvu(value: PerspectiveKey): void {
-  try {
-    updateVariablesWith(
-      vars => {
-        _.set(vars, `stat_data.${PERSPECTIVE_VAR_PATH}`, value);
-        return vars;
-      },
-      { type: 'message', message_id: getCurrentMessageId() },
-    );
-  } catch (error) {
-    console.warn('保存主视角到 MVU 变量失败:', error);
-  }
-}
-
-function shouldShowPerspectiveModal(): boolean {
-  return syncLastMessageId() === 0;
-}
-
-function getPerspectiveOpening(): string {
-  const key = selectedPerspective.value ?? '无';
-  return openingConfig.perspectives[key].opening;
-}
-
-function confirmPerspective(): void {
-  if (!selectedPerspective.value) return;
-
-  perspectiveConfirmed.value = true;
-  showPerspectiveSelector.value = false;
-  persistPerspectiveToChatVariables(selectedPerspective.value);
-  persistPerspectiveToMvu(selectedPerspective.value);
-
-  const mapped = perspectiveToCharacter[selectedPerspective.value];
-  if (mapped) activeCharacterKey.value = mapped;
-
-  if (syncLastMessageId() === 0) {
-    const opening = getPerspectiveOpening();
-    // 物理修改酒馆的第一条消息
-    void setChatMessages([{ message_id: 0, message: opening }]);
-    rawCurrentMessage.value = opening;
-    parseNarrativeMessage(opening);
-  }
-
-  toastr.success(`主视角已确定：${selectedPerspective.value}`);
 }
 
 function loadHistory(reset = false): void {
@@ -1325,28 +1104,15 @@ async function handleOption(content: string): Promise<void> {
     return;
   }
 
-  if (showPerspectiveSelector.value || !perspectiveConfirmed.value) {
-    toastr.warning('请先完成主视角选择。');
-    return;
-  }
-
   if (isBusyGenerating.value) return;
   isBusyGenerating.value = true;
 
   try {
-    const isFirstTurn = syncLastMessageId() === 0;
     await createChatMessages([{ role: 'user', message: clean }]);
 
     const result = await generate({
       user_input: clean,
       should_stream: false,
-      overrides: isFirstTurn
-        ? {
-            chat_history: {
-              prompts: [{ role: 'assistant', content: getPerspectiveOpening() }],
-            },
-          }
-        : undefined,
     });
 
     const latest = getChatMessages(-1)[0] as ChatMessage | undefined;
@@ -1407,6 +1173,10 @@ function openEditLastMessage(): void {
   isEditingMessageVisible.value = true;
 }
 
+function cancelEdit(): void {
+  isEditingMessageVisible.value = false;
+}
+
 async function saveEditedMessage(): Promise<void> {
   const lastId = syncLastMessageId();
   if (!editingMessageText.value.trim()) return;
@@ -1465,7 +1235,10 @@ function openCharacterDetail(characterKey: string): void {
 
 function onGlobalKeydown(event: KeyboardEvent): void {
   if (event.key !== 'Escape') return;
-  if (showPerspectiveSelector.value) return;
+  if (isEditingMessageVisible.value) {
+    cancelEdit();
+    return;
+  }
   if (isFeatureModalVisible.value) {
     closeFeatureModal();
   }
@@ -1473,15 +1246,6 @@ function onGlobalKeydown(event: KeyboardEvent): void {
 
 async function initializeForCurrentChat(): Promise<void> {
   syncLastMessageId();
-  const cachedPerspective = readPerspectiveFromChatVariables();
-  showPerspectiveSelector.value = shouldShowPerspectiveModal() && !cachedPerspective;
-  selectedPerspective.value = showPerspectiveSelector.value ? cachedPerspective : (cachedPerspective ?? '无');
-  perspectiveConfirmed.value = !showPerspectiveSelector.value;
-
-  if (!showPerspectiveSelector.value && selectedPerspective.value) {
-    activeCharacterKey.value = perspectiveToCharacter[selectedPerspective.value];
-  }
-
   refreshLatestAssistantMessage();
   loadHistory(true);
   refreshChatVariablesSnapshot();
@@ -1526,7 +1290,7 @@ watch(selectedWorldbookName, () => {
 
 onMounted(() => {
   document.title = '点兔文字交互界面';
-  upsertMetaDescription('高沉浸文字互动体验，支持选项驱动叙事、世界书联动与主视角开场注入。');
+  upsertMetaDescription('高沉浸文字互动体验，支持选项驱动叙事与世界书联动。');
   document.addEventListener('keydown', onGlobalKeydown);
 
   void initializeForCurrentChat();
