@@ -15,8 +15,7 @@
     <transition name="fade">
       <section v-if="isSplashScreenVisible" class="splash-screen">
         <div class="splash-logo animate-fadeInDown">
-          <h1 class="splash-title">ご注文はうさぎですか？</h1>
-          <p class="splash-subtitle">BLOOM SIMULATOR</p>
+          <img src="./assets/icons/title_brown.svg" />
         </div>
         <button class="press-start-btn animate-fadeInUp" @click="handleStart">
           <span class="animate-pulse">PRESS START</span>
@@ -27,7 +26,7 @@
     <!-- Top Navigation -->
     <header id="region-top-nav">
       <div class="brand-logo">
-        <span class="brand-main">点兔叙事界面</span>
+        <span class="brand-main">叙事界面</span>
         <span class="brand-sub">Gochiusa Narrative Interface</span>
       </div>
 
@@ -58,11 +57,32 @@
               <i class="fa-solid fa-arrows-rotate"></i>
               <span>同步</span>
             </button>
+            <button class="btn nav-btn" @click="handleSwipe">
+              <i class="fa-solid fa-shuffle"></i>
+              <span>重新生成</span>
+            </button>
+            <button class="btn nav-btn" @click="openEditLastMessage">
+              <i class="fa-solid fa-pen-to-square"></i>
+              <span>编辑</span>
+            </button>
+            <button class="btn nav-btn" :disabled="!editingMessageText.trim()" @click="saveEditedMessage">
+              <i class="fa-solid fa-floppy-disk"></i>
+              <span>保存编辑</span>
+            </button>
           </div>
         </div>
         <article id="story-current-message" aria-live="polite">
           {{ displayedMessage }}
         </article>
+        <div v-if="isEditingMessageVisible" class="edit-last-message">
+          <label for="edit-last-message-textarea" class="sr-only">编辑上一条消息</label>
+          <textarea
+            id="edit-last-message-textarea"
+            v-model="editingMessageText"
+            rows="4"
+            placeholder="在此编辑上一条消息内容..."
+          ></textarea>
+        </div>
       </section>
 
       <!-- Options Panel -->
@@ -227,17 +247,49 @@
                   class="card"
                   style="padding: 15px; border: 1px solid var(--line-soft); border-radius: 12px; background: white"
                 >
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px">
-                    <strong style="color: var(--accent-gold)">{{ entry.name }}</strong>
-                    <button
-                      class="btn"
-                      :style="{ color: entry.enabled ? 'green' : 'red' }"
-                      @click="toggleWorldbookEntryState(entry.uid, !entry.enabled)"
-                    >
-                      {{ entry.enabled ? '已启用' : '已禁用' }}
-                    </button>
+                  <div
+                    style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px"
+                  >
+                    <div>
+                      <strong style="display: block; color: var(--accent-gold); font-size: 1.1rem">{{
+                        entry.name
+                      }}</strong>
+                      <div style="display: flex; gap: 8px; margin-top: 4px">
+                        <span
+                          v-if="entry.strategy.type === 'constant'"
+                          class="status-chip"
+                          style="background: #eef; color: #55a; font-size: 0.7rem"
+                          >常驻</span
+                        >
+                        <span
+                          v-if="entry.strategy.type === 'selective'"
+                          class="status-chip"
+                          style="background: #efe; color: #5a5; font-size: 0.7rem"
+                          >条件触发</span
+                        >
+                        <span
+                          v-if="entry.strategy.type === 'vectorized'"
+                          class="status-chip"
+                          style="background: #eee; color: #666; font-size: 0.7rem"
+                          >向量化</span
+                        >
+                      </div>
+                    </div>
+                    <label class="toggle-switch">
+                      <input
+                        type="checkbox"
+                        :checked="entry.enabled"
+                        @change="toggleWorldbookEntryState(entry.uid, !entry.enabled)"
+                      />
+                      <span class="slider"></span>
+                    </label>
                   </div>
-                  <p style="font-size: 0.9rem; color: var(--ink-1)">{{ truncateText(entry.content, 150) }}</p>
+                  <p style="font-size: 0.85rem; color: var(--ink-1); line-height: 1.5; margin-bottom: 10px">
+                    {{ truncateText(entry.content, 100) }}
+                  </p>
+                  <button class="btn" style="width: 100%; font-size: 0.8rem" @click="viewWorldbookDetail(entry)">
+                    查看完整条目内容
+                  </button>
                 </div>
               </div>
             </div>
@@ -431,18 +483,37 @@
         </div>
       </div>
     </transition>
+
+    <!-- Worldbook Detail Modal -->
+    <transition name="fade">
+      <div v-if="selectedEntry" class="modal-scrim" @click="selectedEntry = null">
+        <div class="modal-shell" style="max-width: 700px" @click.stop>
+          <header class="modal-header">
+            <h2>{{ selectedEntry.name }}</h2>
+            <button class="nav-btn" @click="selectedEntry = null"><i class="fa-solid fa-xmark"></i></button>
+          </header>
+          <div class="modal-body">
+            <div style="white-space: pre-wrap; line-height: 1.6; font-family: 'Noto Sans SC', sans-serif">
+              {{ selectedEntry.content }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import openingConfigRaw from './config/opening_by_perspective.yaml';
+const editingMessageText = ref('');
+// const lastMessageRaw = ref<ChatMessage | null>(null);
 
 type FeatureTabKey = 'history' | 'worldbook' | 'settings' | 'character';
 type DisplayMode = 'instant' | 'typewriter' | 'segment';
 type ThemeMode = 'theme-latte-noir' | 'theme-midnight-salon';
 type FontScale = 'small' | 'medium' | 'large';
-type PerspectiveKey = '心爱' | '智乃' | '理世' | '千夜' | '纱路' | '无';
+type PerspectiveKey = '保登心爱' | '香风智乃' | '天天座理世' | '宇治松千夜' | '桐间纱路' | '无';
 
 type PerspectiveEntry = {
   description: string;
@@ -476,36 +547,36 @@ type CharacterProfile = {
   mood: string;
   location: string;
   outfit: string;
-  relation: string;
+  keyItems: string;
 };
 
-const perspectiveKeys: PerspectiveKey[] = ['心爱', '智乃', '理世', '千夜', '纱路', '无'];
+const perspectiveKeys: PerspectiveKey[] = ['保登心爱', '香风智乃', '天天座理世', '宇治松千夜', '桐间纱路', '无'];
 
 const fallbackOpeningConfig: OpeningConfig = {
   perspectives: {
-    心爱: {
+    保登心爱: {
       description: '以保登心爱的情绪与语气观察事件发展，优先关注热情、主动与当下氛围。',
-      opening: '你在清晨推开兔屋咖啡馆的大门，熟悉的甜香与轻快脚步声同时向你迎来。',
+      opening: '',
     },
-    智乃: {
+    香风智乃: {
       description: '以香风智乃的克制与细腻感知推进剧情，优先关注细节与隐含情绪变化。',
-      opening: '你端正地整理围裙与托盘，抬眼时，门铃正好响起，今天的第一位客人到了。',
+      opening: '',
     },
-    理世: {
+    天天座理世: {
       description: '以天天座理世的执行力推进剧情，优先处理秩序、任务与突发状况。',
-      opening: '你快速扫视店内座位与动线，确认一切就绪后，今天的营业正式开始。',
+      opening: '',
     },
-    千夜: {
+    宇治松千夜: {
       description: '以宇治松千夜的温婉风格观察互动，优先关注礼节、安抚与氛围调和。',
-      opening: '你轻轻摆好茶点，窗外风铃声细微晃动，一段柔和却重要的对话即将开始。',
+      opening: '',
     },
-    纱路: {
+    桐间纱路: {
       description: '以桐间纱路的谨慎与责任感参与剧情，优先关注风险与规则边界。',
-      opening: '你深呼吸后推门而入，尽量让自己的步伐显得从容，不让紧张暴露在表情里。',
+      opening: '',
     },
     无: {
       description: '使用中立视角，不绑定具体角色语气，更适合观察多角色并行叙事。',
-      opening: '午后钟声落下，你推门进入熟悉的咖啡馆，空气里有甜点与咖啡的暖香。',
+      opening: '',
     },
   },
 };
@@ -519,7 +590,7 @@ const defaultSettings: UISettings = {
 };
 
 const SETTINGS_STORAGE_KEY = 'gochiusa.frontend.settings.v2';
-const PERSPECTIVE_VAR_PATH = '前端界面.主视角';
+const PERSPECTIVE_VAR_PATH = '_主视角';
 
 function catboxImage(code: string): string {
   return `https://files.catbox.moe/${code}.png`;
@@ -532,10 +603,10 @@ const characterProfiles: CharacterProfile[] = [
     color: 'var(--clr-cocoa)',
     avatarUrl: catboxImage('qjltca'),
     summary: '活力型引导角色，擅长快速拉近关系并推动场景气氛。',
-    mood: '开朗',
-    location: '兔屋咖啡馆前厅',
-    outfit: '咖啡厅制服',
-    relation: '友好',
+    mood: '元气满满',
+    location: 'Rabbit House 一楼吧台',
+    outfit: 'Rabbit House店员服，佩戴肉桂粉色花朵发饰',
+    keyItems: '',
   },
   {
     key: 'chino',
@@ -543,10 +614,10 @@ const characterProfiles: CharacterProfile[] = [
     color: 'var(--clr-chino)',
     avatarUrl: catboxImage('6t09pw'),
     summary: '观察型角色，擅长在安静场景中提供高价值细节。',
-    mood: '冷静',
-    location: '吧台内侧',
-    outfit: '咖啡厅制服',
-    relation: '信任建立中',
+    mood: '平静',
+    location: 'Rabbit House 一楼吧台',
+    outfit: 'Rabbit House店员服',
+    keyItems: '',
   },
   {
     key: 'rize',
@@ -554,10 +625,10 @@ const characterProfiles: CharacterProfile[] = [
     color: 'var(--clr-rize)',
     avatarUrl: catboxImage('n9szhx'),
     summary: '执行型角色，擅长处理节奏与秩序相关场景。',
-    mood: '专注',
-    location: '点单与出餐动线',
-    outfit: '咖啡厅制服',
-    relation: '可靠同伴',
+    mood: '自信',
+    location: 'Rabbit House 一楼吧台',
+    outfit: 'Rabbit House店员服',
+    keyItems: '',
   },
   {
     key: 'chiya',
@@ -565,10 +636,10 @@ const characterProfiles: CharacterProfile[] = [
     color: 'var(--clr-chiya)',
     avatarUrl: catboxImage('v4spnt'),
     summary: '情绪调和型角色，擅长缓冲冲突与提升舒适感。',
-    mood: '温和',
-    location: '甜点展示区',
-    outfit: '和风改良制服',
-    relation: '亲近',
+    mood: '温柔',
+    location: '甘兔庵',
+    outfit: '甘兔庵和服',
+    keyItems: '',
   },
   {
     key: 'syaro',
@@ -576,19 +647,118 @@ const characterProfiles: CharacterProfile[] = [
     color: 'var(--clr-syaro)',
     avatarUrl: catboxImage('b982xz'),
     summary: '谨慎型角色，适合调查、推理与高压交互场景。',
-    mood: '紧张但坚定',
-    location: '门厅与过道',
-    outfit: '学院日常装',
-    relation: '逐步加深',
+    mood: '平静',
+    location: 'Fleur de Lapin',
+    outfit: 'Fleur de Lapin店员服',
+    keyItems: '',
+  },
+  {
+    key: 'maya',
+    name: '条河麻耶',
+    color: 'var(--clr-maya)',
+    avatarUrl: catboxImage('bmw44n'),
+    summary: '活泼元气的学生角色，善于带动团队气氛。',
+    mood: '兴奋',
+    location: '公园',
+    outfit: '大小姐学校校服',
+    keyItems: '',
+  },
+  {
+    key: 'megu',
+    name: '奈津惠',
+    color: 'var(--clr-megu)',
+    avatarUrl: catboxImage('koovsy'),
+    summary: '温柔细腻的后辈角色，情绪变化细腻。',
+    mood: '害羞',
+    location: '公园',
+    outfit: '大小姐学校校服',
+    keyItems: '',
+  },
+  {
+    key: 'fuyu',
+    name: '风衣叶冬优',
+    color: 'var(--clr-fuyu)',
+    avatarUrl: catboxImage('lckv74'),
+    summary: '稍显笨拙却努力的学妹角色，常在练习中成长。',
+    mood: '紧张',
+    location: 'Bright Bunny',
+    outfit: 'Bright Bunny店员服',
+    keyItems: '',
+  },
+  {
+    key: 'natsume',
+    name: '神沙夏明',
+    color: 'var(--clr-natsume)',
+    avatarUrl: catboxImage('usclrp'),
+    summary: '傲娇型角色，与伙伴间有密切互动。',
+    mood: '开心',
+    location: 'Bright Bunny',
+    outfit: '大小姐学校校服',
+    keyItems: '',
+  },
+  {
+    key: 'eru',
+    name: '神沙映月',
+    color: 'var(--clr-eru)',
+    avatarUrl: catboxImage('r10sh1'),
+    summary: '成熟稳重的一方，与夏明组成对比鲜明的双子。',
+    mood: '平静',
+    location: 'Bright Bunny',
+    outfit: '大小姐学校校服',
+    keyItems: '',
+  },
+  {
+    key: 'yura',
+    name: '狩手结良',
+    color: 'var(--clr-yura)',
+    avatarUrl: catboxImage('a3uv0i'),
+    summary: '可靠型配角，适合作为推进事件的支点角色。',
+    mood: '认真',
+    location: '理世的家',
+    outfit: '女仆装',
+    keyItems: '',
+  },
+  {
+    key: 'aoyama',
+    name: '青山蓝山',
+    color: 'var(--clr-aoyama)',
+    avatarUrl: catboxImage('x18i00'),
+    summary: '作家角色，负责提供世界观相关的额外信息。',
+    mood: '迷茫',
+    location: '小镇街道',
+    outfit: '休闲作家风格服装',
+    keyItems: '',
+  },
+  {
+    key: 'mate',
+    name: '真手凛',
+    color: 'var(--clr-mate)',
+    avatarUrl: catboxImage('kk59ir'),
+    summary: '工作能力出色的社会人角色，参与支线剧情较多。',
+    mood: '认真',
+    location: '小镇街道',
+    outfit: '可爱风格休闲装',
+    keyItems: '',
+  },
+  {
+    key: 'mocha',
+    name: '保登摩卡',
+    color: 'var(--clr-mocha)',
+    avatarUrl: catboxImage('hi872c'),
+    summary: '心爱的姐姐角色，常以温柔方式影响场景氛围。',
+    mood: '温柔',
+    location: '保登面包房',
+    outfit: '面包店工作服',
+    keyItems: '',
   },
 ];
 
 const perspectiveToCharacter: Record<PerspectiveKey, string> = {
-  心爱: 'cocoa',
-  智乃: 'chino',
-  理世: 'rize',
-  千夜: 'chiya',
-  纱路: 'syaro',
+  保登心爱: 'cocoa',
+  香风智乃: 'chino',
+  天天座理世: 'rize',
+  宇治松千夜: 'chiya',
+  桐间纱路: 'syaro',
   无: 'cocoa',
 };
 
@@ -696,6 +866,8 @@ const perspectiveConfirmed = ref(false);
 const customOption = ref('');
 const isFullscreen = ref(false);
 const isBusyGenerating = ref(false);
+const selectedEntry = ref<WorldbookEntry | null>(null);
+const lastMessageRaw = ref<ChatMessage | null>(null);
 
 const rawCurrentMessage = ref('正在等待剧情推进，请选择下一步行动。');
 const displayedMessage = ref('正在等待剧情推进，请选择下一步行动。');
@@ -715,11 +887,46 @@ const worldbookError = ref('');
 const isWorldbookLoading = ref(false);
 const lastMessageId = ref(0);
 
+const isEditingMessageVisible = ref(false);
+
 const options = ref<RoleplayOption[]>([
   { id: 'opt-001', title: '向柜台点单', content: '你走向柜台，礼貌地询问今日推荐饮品。' },
   { id: 'opt-002', title: '观察店内', content: '你放慢脚步，观察店内客人与角色之间的互动细节。' },
   { id: 'opt-003', title: '主动搭话', content: '你选择与当前出场角色展开一段自然交流。' },
 ]);
+
+// Parsed Content
+const extractedContext = ref('');
+const extractedVariables = ref('');
+
+function parseNarrativeMessage(message: string) {
+  // 提取 CONTEXT
+  const contextMatch = message.match(/<CONTEXT>([\s\S]*?)<\/CONTEXT>/i);
+  extractedContext.value = (contextMatch ? contextMatch[1] : message).trim();
+
+  // 提取 OPTIONS
+  const optionsMatch = message.match(/<OPTIONS>([\s\S]*?)<\/OPTIONS>/i);
+  if (optionsMatch) {
+    const lines = optionsMatch[1]
+      .trim()
+      .split('\n')
+      .filter(l => l.trim());
+    options.value = lines.map((line, idx) => {
+      const parts = line.match(/^[([【](.+?)[)\]】]\s*(.+)/);
+      return {
+        id: `opt-dynamic-${idx + 1}`,
+        title: parts ? parts[1] : `行动 ${idx + 1}`,
+        content: parts ? parts[2] : line.trim(),
+      };
+    });
+  }
+
+  // 提取 UpdateVariable
+  const varMatch = message.match(/<UpdateVariable>([\s\S]*?)<\/UpdateVariable>/i);
+  extractedVariables.value = varMatch ? varMatch[1].trim() : '';
+
+  rawCurrentMessage.value = extractedContext.value;
+}
 
 const tabs: { key: FeatureTabKey; label: string }[] = [
   { key: 'history', label: '历史消息' },
@@ -741,6 +948,13 @@ const fontScaleMap: Record<FontScale, string> = {
 const pageRootStyle = computed(() => ({
   '--font-scale': fontScaleMap[settings.value.fontScale],
 }));
+
+const sortedOptions = computed(() => {
+  // 将自定义选项放在列表最后，动态选项保持原有顺序
+  const dynamic = options.value.filter(o => o.id.startsWith('opt-dynamic'));
+  const custom = options.value.filter(o => !o.id.startsWith('opt-dynamic'));
+  return [...dynamic, ...custom];
+});
 
 const perspectiveEntries = computed(() => {
   return perspectiveKeys.map(key => ({
@@ -790,15 +1004,15 @@ const activeCharacterState = computed(() => {
   const vars = chatVariablesSnapshot.value;
 
   const mood =
-    _.get(vars, `${profile.name}.心情`) ??
-    _.get(vars, `角色状态.${profile.name}.心情`) ??
-    _.get(vars, `角色.${profile.name}.心情`) ??
+    _.get(vars, `${profile.name}.心情状态`) ??
+    _.get(vars, `角色状态.${profile.name}.心情状态`) ??
+    _.get(vars, `角色.${profile.name}.心情状态`) ??
     profile.mood;
 
   const location =
-    _.get(vars, `${profile.name}.位置`) ??
-    _.get(vars, `角色状态.${profile.name}.位置`) ??
-    _.get(vars, `角色.${profile.name}.位置`) ??
+    _.get(vars, `${profile.name}.当前位置`) ??
+    _.get(vars, `角色状态.${profile.name}.当前位置`) ??
+    _.get(vars, `角色.${profile.name}.当前位置`) ??
     profile.location;
 
   const outfit =
@@ -807,17 +1021,34 @@ const activeCharacterState = computed(() => {
     _.get(vars, `角色.${profile.name}.着装`) ??
     profile.outfit;
 
-  const relation =
-    _.get(vars, `${profile.name}.关系`) ??
-    _.get(vars, `角色状态.${profile.name}.关系`) ??
-    _.get(vars, `角色.${profile.name}.关系`) ??
-    profile.relation;
+  const keyItemsSource =
+    _.get(vars, `${profile.name}.关键物品`) ??
+    _.get(vars, `角色状态.${profile.name}.关键物品`) ??
+    _.get(vars, `角色.${profile.name}.关键物品`) ??
+    profile.keyItems;
+
+  let keyItemsText: string;
+  if (typeof keyItemsSource === 'string' || keyItemsSource == null) {
+    keyItemsText = keyItemsSource || profile.keyItems || '暂无特别标记的物品';
+  } else {
+    const entries = Object.entries(keyItemsSource as Record<string, { 描述?: string; 数量?: number }>);
+    keyItemsText =
+      entries
+        .map(([name, info]) => {
+          const count = info?.数量;
+          if (count != null && count !== 1) return `${name}×${count}`;
+          return name;
+        })
+        .join('、') ||
+      profile.keyItems ||
+      '暂无特别标记的物品';
+  }
 
   return {
     当前心情: String(mood),
     所在位置: String(location),
     当前着装: String(outfit),
-    关系状态: String(relation),
+    当前关键物品: keyItemsText,
   };
 });
 
@@ -878,6 +1109,15 @@ function toggleDisplayMode(): void {
 
 function readPerspectiveFromChatVariables(): PerspectiveKey | null {
   try {
+    // 优先从当前楼层的 MVU 变量中读取
+    const mvuVars = getVariables({ type: 'message', message_id: getCurrentMessageId() });
+    const mvuValue = _.get(mvuVars, `stat_data.${PERSPECTIVE_VAR_PATH}`);
+    if (isPerspectiveKey(mvuValue)) return mvuValue;
+  } catch {
+    // 忽略 MVU 不可用时的错误
+  }
+
+  try {
     const vars = getVariables({ type: 'chat' });
     const value = _.get(vars, PERSPECTIVE_VAR_PATH);
     return isPerspectiveKey(value) ? value : null;
@@ -906,6 +1146,20 @@ function persistPerspectiveToChatVariables(value: PerspectiveKey): void {
   }
 }
 
+function persistPerspectiveToMvu(value: PerspectiveKey): void {
+  try {
+    updateVariablesWith(
+      vars => {
+        _.set(vars, `stat_data.${PERSPECTIVE_VAR_PATH}`, value);
+        return vars;
+      },
+      { type: 'message', message_id: getCurrentMessageId() },
+    );
+  } catch (error) {
+    console.warn('保存主视角到 MVU 变量失败:', error);
+  }
+}
+
 function shouldShowPerspectiveModal(): boolean {
   return syncLastMessageId() === 0;
 }
@@ -921,13 +1175,17 @@ function confirmPerspective(): void {
   perspectiveConfirmed.value = true;
   showPerspectiveSelector.value = false;
   persistPerspectiveToChatVariables(selectedPerspective.value);
+  persistPerspectiveToMvu(selectedPerspective.value);
 
   const mapped = perspectiveToCharacter[selectedPerspective.value];
   if (mapped) activeCharacterKey.value = mapped;
 
   if (syncLastMessageId() === 0) {
-    rawCurrentMessage.value = getPerspectiveOpening();
-    updateOptionsFromMessage(rawCurrentMessage.value);
+    const opening = getPerspectiveOpening();
+    // 物理修改酒馆的第一条消息
+    void setChatMessages([{ message_id: 0, message: opening }]);
+    rawCurrentMessage.value = opening;
+    parseNarrativeMessage(opening);
   }
 
   toastr.success(`主视角已确定：${selectedPerspective.value}`);
@@ -1000,6 +1258,10 @@ async function loadWorldbookEntries(): Promise<void> {
   }
 }
 
+function viewWorldbookDetail(entry: WorldbookEntry): void {
+  selectedEntry.value = entry;
+}
+
 async function reloadWorldbook(): Promise<void> {
   await loadWorldbookNames();
   await loadWorldbookEntries();
@@ -1044,8 +1306,10 @@ function refreshLatestAssistantMessage(): void {
   const latest = list.at(-1);
 
   if (!latest || typeof latest.message !== 'string') return;
-  rawCurrentMessage.value = latest.message;
-  updateOptionsFromMessage(latest.message);
+
+  lastMessageRaw.value = latest;
+  parseNarrativeMessage(latest.message);
+  scrollStoryIfNeeded();
 }
 
 function scrollStoryIfNeeded(): void {
@@ -1112,13 +1376,53 @@ async function submitCustomOption(): Promise<void> {
     return;
   }
 
-  options.value.unshift({
-    id: `opt-custom-${Date.now()}`,
-    title: '自定义行动',
-    content: value,
-  });
+  options.value.push({ id: `opt-custom-${Date.now()}`, title: '自定义行动', content: value });
   customOption.value = '';
   await handleOption(value);
+}
+
+async function handleSwipe(): Promise<void> {
+  if (isBusyGenerating.value) return;
+  isBusyGenerating.value = true;
+  try {
+    // 调用酒馆 generate 接口，传入 swipe 动作
+    const result = await SillyTavern.generate({ action: 'swipe' });
+    rawCurrentMessage.value = result;
+    refreshLatestAssistantMessage();
+    toastr.success('已重新生成回复。');
+  } catch (error) {
+    toastr.error('重生成失败。');
+    console.error(error);
+  } finally {
+    isBusyGenerating.value = false;
+  }
+}
+
+function openEditLastMessage(): void {
+  const lastId = syncLastMessageId();
+  const msg = getChatMessages(lastId)[0] as ChatMessage | undefined;
+  if (!msg) return;
+
+  editingMessageText.value = msg.message;
+  isEditingMessageVisible.value = true;
+}
+
+async function saveEditedMessage(): Promise<void> {
+  const lastId = syncLastMessageId();
+  if (!editingMessageText.value.trim()) return;
+
+  try {
+    // 使用酒馆 API 更新消息内容
+    setChatMessages([{ message_id: lastId, message: editingMessageText.value.trim() }]);
+
+    isEditingMessageVisible.value = false;
+    refreshLatestAssistantMessage();
+    loadHistory(false);
+    toastr.success('消息已修改。');
+  } catch (error) {
+    toastr.error('修改保存失败。');
+    console.error(error);
+  }
 }
 
 async function toggleFullscreen(): Promise<void> {
