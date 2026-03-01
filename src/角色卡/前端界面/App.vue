@@ -9,11 +9,48 @@
     <!-- Background Layer -->
     <div class="background-layer">
       <div class="bg-pattern"></div>
+      <!-- Floating Accents -->
+      <!-- <svg class="floating-accent" style="top: 15%; left: 5%; width: 120px;" viewBox="0 0 100 100">
+        <path fill="currentColor" d="M50 10 A40 40 0 0 1 90 50 A40 40 0 0 1 50 90 A40 40 0 0 1 10 50 A40 40 0 0 1 50 10 Z" fill-opacity="0.1" />
+        <circle cx="50" cy="50" r="30" stroke="currentColor" stroke-width="0.5" fill="none" stroke-dasharray="2 4" />
+      </svg>
+      <svg class="floating-accent" style="bottom: 10%; right: 5%; width: 150px; animation-delay: -2s;" viewBox="0 0 100 100">
+        <path fill="currentColor" d="M20 50 Q50 20 80 50 T20 50" fill-opacity="0.05" />
+      </svg> -->
     </div>
 
     <!-- Splash Screen -->
     <transition name="fade">
       <section v-if="isSplashScreenVisible" class="splash-screen">
+        <!-- Corner Decors -->
+        <div
+          v-for="pos in ['top-left', 'top-right', 'bottom-left', 'bottom-right']"
+          :key="pos"
+          :class="['splash-decor', pos]"
+        >
+          <svg viewBox="0 0 200 200" width="100%" height="100%">
+            <defs>
+              <radialGradient id="grad-decor" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="currentColor" stop-opacity="0.8" />
+                <stop offset="100%" stop-color="currentColor" stop-opacity="0" />
+              </radialGradient>
+            </defs>
+            <circle
+              cx="0"
+              cy="0"
+              r="160"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1"
+              stroke-dasharray="10 20"
+              opacity="0.4"
+            />
+            <path d="M0 180 Q 80 180 180 0" fill="none" stroke="currentColor" stroke-width="2" />
+            <circle cx="40" cy="140" r="15" fill="none" stroke="currentColor" stroke-width="1.5" />
+            <path d="M10 100 L30 120 M40 80 L60 100" stroke="currentColor" stroke-width="1" />
+          </svg>
+        </div>
+
         <div class="splash-logo animate-fadeInDown">
           <img :src="titleBrownLogo" />
         </div>
@@ -67,9 +104,12 @@
             </button>
           </div>
         </div>
-        <article v-show="!isEditingMessageVisible" id="story-current-message" aria-live="polite">
-          {{ displayedMessage }}
-        </article>
+        <article
+          v-show="!isEditingMessageVisible"
+          id="story-current-message"
+          aria-live="polite"
+          v-html="displayedMessage"
+        ></article>
         <div v-if="isEditingMessageVisible" id="edit-last-message" class="edit-last-message">
           <label for="edit-last-message-textarea" class="sr-only">编辑上一条消息</label>
           <textarea
@@ -204,7 +244,12 @@
                   v-for="msg in historyFilteredMessages"
                   :key="msg.message_id"
                   class="card"
-                  style="padding: 15px; border: 1px solid var(--line-soft); border-radius: 12px; background: white"
+                  style="
+                    padding: 15px;
+                    border: 1px solid var(--line-soft);
+                    border-radius: 12px;
+                    background: var(--card-bg);
+                  "
                 >
                   <div
                     style="
@@ -251,7 +296,12 @@
                   v-for="entry in filteredWorldbookEntries"
                   :key="entry.uid"
                   class="card"
-                  style="padding: 15px; border: 1px solid var(--line-soft); border-radius: 12px; background: white"
+                  style="
+                    padding: 15px;
+                    border: 1px solid var(--line-soft);
+                    border-radius: 12px;
+                    background: var(--card-bg);
+                  "
                 >
                   <div
                     style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px"
@@ -400,7 +450,12 @@
                 </div>
                 <div
                   class="card"
-                  style="padding: 20px; border: 1px solid var(--line-soft); border-radius: 16px; background: white"
+                  style="
+                    padding: 20px;
+                    border: 1px solid var(--line-soft);
+                    border-radius: 16px;
+                    background: var(--card-bg);
+                  "
                 >
                   <div style="display: flex; gap: 20px; align-items: flex-start">
                     <img
@@ -449,12 +504,113 @@
         </div>
       </div>
     </transition>
+
+    <div
+      v-if="!isSplashScreenVisible"
+      class="floating-panel floating-panel-shop"
+      :class="{ minimized: isWorldMinimized && isShopPopularityMinimized }"
+      :style="{ transform: `translate(${shopPopularityPosition.x}px, ${shopPopularityPosition.y}px)` }"
+      @mousedown.stop="onShopPopularityDragStart"
+      @touchstart.stop.prevent="onShopPopularityDragStart"
+    >
+      <!-- 世界部分 -->
+      <header class="floating-panel-header" :class="{ 'section-header': true }">
+        <div class="floating-panel-title">
+          <i class="fa-solid fa-globe"></i>
+          <span>世界</span>
+        </div>
+        <button class="mini-btn" type="button" @click.stop="toggleWorldMinimized">
+          <i class="fa-solid" :class="isWorldMinimized ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+        </button>
+      </header>
+      <transition name="slide-up">
+        <div v-if="!isWorldMinimized" class="floating-panel-body world-section-body">
+          <div class="world-info-row">
+            <span class="world-label">时间</span>
+            <span class="world-value">{{ worldInfo.time }}</span>
+          </div>
+          <div class="world-info-row">
+            <span class="world-label">地点</span>
+            <span class="world-value">{{ worldInfo.location }}</span>
+          </div>
+          <div class="world-info-row">
+            <span class="world-label">季节</span>
+            <span class="world-value">{{ worldInfo.season }}</span>
+          </div>
+          <div class="world-info-row">
+            <span class="world-label">天气</span>
+            <span class="world-value">{{ worldInfo.weather }}</span>
+          </div>
+          <div v-if="worldInfo.recentEvents.length > 0" class="world-info-row world-events-row">
+            <span class="world-label">近期事务</span>
+            <div class="world-events-list">
+              <div v-for="(event, index) in worldInfo.recentEvents" :key="index" class="world-event-item">
+                <span class="event-name">{{ event.name }}</span>
+                <span class="event-desc">{{ event.desc }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- 分隔线 -->
+      <div v-if="!isWorldMinimized || !isShopPopularityMinimized" class="floating-panel-divider"></div>
+
+      <!-- 店铺人气部分 -->
+      <header class="floating-panel-header" :class="{ 'section-header': true }">
+        <div class="floating-panel-title">
+          <i class="fa-solid fa-mug-saucer"></i>
+          <span>店铺人气</span>
+        </div>
+        <button class="mini-btn" type="button" @click.stop="toggleShopPopularityMinimized">
+          <i class="fa-solid" :class="isShopPopularityMinimized ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+        </button>
+      </header>
+      <transition name="slide-up">
+        <div v-if="!isShopPopularityMinimized" class="floating-panel-body">
+          <div class="shop-popularity-row">
+            <span class="shop-name">Rabbit House</span>
+            <div class="shop-meter">
+              <div class="shop-meter-fill shop-meter-rabbit" :style="{ width: shopPopularity.rabbitHouse + '%' }"></div>
+            </div>
+            <span class="shop-value">{{ shopPopularity.rabbitHouse }}%</span>
+          </div>
+          <div class="shop-popularity-row">
+            <span class="shop-name">甘兔庵</span>
+            <div class="shop-meter">
+              <div class="shop-meter-fill shop-meter-chiya" :style="{ width: shopPopularity.甘兔庵 + '%' }"></div>
+            </div>
+            <span class="shop-value">{{ shopPopularity.甘兔庵 }}%</span>
+          </div>
+          <div class="shop-popularity-row">
+            <span class="shop-name">Fleur de Lapin</span>
+            <div class="shop-meter">
+              <div class="shop-meter-fill shop-meter-syaro" :style="{ width: shopPopularity.fleur + '%' }"></div>
+            </div>
+            <span class="shop-value">{{ shopPopularity.fleur }}%</span>
+          </div>
+          <div class="shop-popularity-row">
+            <span class="shop-name">Bright Bunny</span>
+            <div class="shop-meter">
+              <div class="shop-meter-fill shop-meter-fuyu" :style="{ width: shopPopularity.brightBunny + '%' }"></div>
+            </div>
+            <span class="shop-value">{{ shopPopularity.brightBunny }}%</span>
+          </div>
+        </div>
+      </transition>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { defineMvuDataStore } from '@util/mvu';
+import { Dictionary } from 'lodash';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { Schema } from '../schema';
 import titleBrownLogo from './assets/icons/title_brown.svg?url';
+
+const useDataStore = defineMvuDataStore(Schema, { type: 'message', message_id: getCurrentMessageId() });
+const store = useDataStore();
 const editingMessageText = ref('');
 const lastMessageRaw = ref<ChatMessage | null>(null);
 
@@ -486,7 +642,7 @@ type CharacterProfile = {
   mood: string;
   location: string;
   outfit: string;
-  keyItems: string;
+  keyItems: Dictionary<{ 描述: string; 数量: number }>;
 };
 
 const defaultSettings: UISettings = {
@@ -510,10 +666,10 @@ const characterProfiles: CharacterProfile[] = [
     color: 'var(--clr-cocoa)',
     avatarUrl: catboxImage('qjltca'),
     summary: 'Rabbit House寄宿店员。喜欢毛茸茸的东西。把智乃视为妹妹一样的存在。名字源自于热可可（Hot Cocoa）。',
-    mood: '元气满满',
-    location: 'Rabbit House 一楼吧台',
-    outfit: 'Rabbit House店员服，佩戴肉桂粉色花朵发饰',
-    keyItems: '',
+    mood: store.data.保登心爱.心情状态,
+    location: store.data.保登心爱.当前位置,
+    outfit: store.data.保登心爱.着装,
+    keyItems: store.data.保登心爱.关键物品,
   },
   {
     key: 'chino',
@@ -522,10 +678,10 @@ const characterProfiles: CharacterProfile[] = [
     avatarUrl: catboxImage('6t09pw'),
     summary:
       'Rabbit House家的独生女。性格冷淡的无口系少女，独立能力强但不擅长与人相处。在咖啡方面有着渊博的知识。名字源自于卡布奇诺。',
-    mood: '平静',
-    location: 'Rabbit House 一楼吧台',
-    outfit: 'Rabbit House店员服',
-    keyItems: '',
+    mood: store.data.香风智乃.心情状态,
+    location: store.data.香风智乃.当前位置,
+    outfit: store.data.香风智乃.着装,
+    keyItems: store.data.香风智乃.关键物品,
   },
   {
     key: 'rize',
@@ -534,10 +690,10 @@ const characterProfiles: CharacterProfile[] = [
     avatarUrl: catboxImage('n9szhx'),
     summary:
       '在Rabbit House打工的店员。平时是个会携带武器的、浑身散发着军人气质的强力角色，内心里却也有着少女的一面。名字源自于法国熏香加味绿茶夏日香气（Thé Des Alizés）。',
-    mood: '自信',
-    location: 'Rabbit House 一楼吧台',
-    outfit: 'Rabbit House店员服',
-    keyItems: '',
+    mood: `${store.data.天天座理世.心情状态}`,
+    location: `${store.data.天天座理世.当前位置}`,
+    outfit: `${store.data.天天座理世.着装}`,
+    keyItems: store.data.天天座理世.关键物品,
   },
   {
     key: 'chiya',
@@ -546,10 +702,10 @@ const characterProfiles: CharacterProfile[] = [
     avatarUrl: catboxImage('v4spnt'),
     summary:
       '和风甜品店甘兔庵的看板娘。有着大和抚子的相貌和气质。兴趣是为菜品起各种各样古怪的名字。名字源自于宇治抹茶。',
-    mood: '温柔',
-    location: '甘兔庵',
-    outfit: '甘兔庵和服',
-    keyItems: '',
+    mood: `${store.data.宇治松千夜.心情状态}`,
+    location: `${store.data.宇治松千夜.当前位置}`,
+    outfit: `${store.data.宇治松千夜.着装}`,
+    keyItems: store.data.宇治松千夜.关键物品,
   },
   {
     key: 'syaro',
@@ -558,109 +714,113 @@ const characterProfiles: CharacterProfile[] = [
     avatarUrl: catboxImage('b982xz'),
     summary:
       '在Fleur du Lapin打工的店员，千夜的发小。有着贵族大小姐一般的气质，却过着简朴的生活。也有着害怕兔子以及容易醉咖啡的一面。名字源自于乞力马扎罗咖啡（Kilimanjaro）。',
-    mood: '平静',
-    location: 'Fleur de Lapin',
-    outfit: 'Fleur de Lapin店员服',
-    keyItems: '',
+    mood: `${store.data.桐间纱路.心情状态}`,
+    location: `${store.data.桐间纱路.当前位置}`,
+    outfit: `${store.data.桐间纱路.着装}`,
+    keyItems: store.data.桐间纱路.关键物品,
   },
   {
     key: 'maya',
     name: '条河麻耶',
     color: 'var(--clr-maya)',
     avatarUrl: catboxImage('bmw44n'),
-    summary: '活泼元气的学生角色，善于带动团队气氛。',
-    mood: '兴奋',
-    location: '公园',
-    outfit: '大小姐学校校服',
-    keyItems: '',
+    summary: '活泼元气，个性爽朗，大大咧咧的高一新生，善于带动团队气氛。名字源自于产自玉玛雅的大吉岭红茶。',
+    mood: `${store.data.条河麻耶.心情状态}`,
+    location: `${store.data.条河麻耶.当前位置}`,
+    outfit: `${store.data.条河麻耶.着装}`,
+    keyItems: store.data.条河麻耶.关键物品,
   },
   {
     key: 'megu',
     name: '奈津惠',
     color: 'var(--clr-megu)',
     avatarUrl: catboxImage('koovsy'),
-    summary: '温柔细腻的后辈角色，情绪变化细腻。',
-    mood: '害羞',
-    location: '公园',
-    outfit: '大小姐学校校服',
-    keyItems: '',
+    summary: '个性温和，有点天然呆的高一新生，情绪变化细腻。名字源自于肉豆蔻（Nutmeg）。',
+    mood: `${store.data.奈津惠.心情状态}`,
+    location: `${store.data.奈津惠.当前位置}`,
+    outfit: `${store.data.奈津惠.着装}`,
+    keyItems: store.data.奈津惠.关键物品,
   },
   {
     key: 'fuyu',
     name: '风衣叶冬优',
     color: 'var(--clr-fuyu)',
     avatarUrl: catboxImage('lckv74'),
-    summary: '稍显笨拙却努力的学妹角色，常在练习中成长。',
-    mood: '紧张',
-    location: 'Bright Bunny',
-    outfit: 'Bright Bunny店员服',
-    keyItems: '',
+    summary:
+      '寄宿在Bright Bunny的高一新生，升入高中以前在大都市生活，与城市中的猫咪们作伴。擅长国际象棋和腹语术。名字源自于短舌匹菊（Feverfew）。',
+    mood: `${store.data.风衣叶冬优.心情状态}`,
+    location: `${store.data.风衣叶冬优.当前位置}`,
+    outfit: `${store.data.风衣叶冬优.着装}`,
+    keyItems: store.data.风衣叶冬优.关键物品,
   },
   {
     key: 'natsume',
     name: '神沙夏明',
     color: 'var(--clr-natsume)',
     avatarUrl: catboxImage('usclrp'),
-    summary: '傲娇型角色，与伙伴间有密切互动。',
-    mood: '开心',
-    location: 'Bright Bunny',
-    outfit: '大小姐学校校服',
-    keyItems: '',
+    summary: 'Bright Bunny社长家的千金，是双胞胎中的妹妹，性格傲娇。名字源自于红枣姜茶。',
+    mood: `${store.data.神沙夏明.心情状态}`,
+    location: `${store.data.神沙夏明.当前位置}`,
+    outfit: `${store.data.神沙夏明.着装}`,
+    keyItems: store.data.神沙夏明.关键物品,
   },
   {
     key: 'eru',
     name: '神沙映月',
     color: 'var(--clr-eru)',
     avatarUrl: catboxImage('r10sh1'),
-    summary: '成熟稳重的一方，与夏明组成对比鲜明的双子。',
-    mood: '平静',
-    location: 'Bright Bunny',
-    outfit: '大小姐学校校服',
-    keyItems: '',
+    summary: 'Bright Bunny社长家的千金，是双胞胎中的姐姐，性格比较天然呆和脱线。名字源自于姜汁汽水（Ginger Ale）。',
+    mood: `${store.data.神沙映月.心情状态}`,
+    location: `${store.data.神沙映月.当前位置}`,
+    outfit: `${store.data.神沙映月.着装}`,
+    keyItems: store.data.神沙映月.关键物品,
   },
   {
     key: 'yura',
     name: '狩手结良',
     color: 'var(--clr-yura)',
     avatarUrl: catboxImage('a3uv0i'),
-    summary: '可靠型配角，适合作为推进事件的支点角色。',
-    mood: '认真',
-    location: '理世的家',
-    outfit: '女仆装',
-    keyItems: '',
+    summary:
+      '理世在高中和大学时的同学，高中时担任吹箭部长，上大学后在理世家兼职女仆。由于两人父亲之间的关系，也是理世的发小。名字源自于金盏花茶（Calendula）。',
+    mood: `${store.data.狩手结良.心情状态}`,
+    location: `${store.data.狩手结良.当前位置}`,
+    outfit: `${store.data.狩手结良.着装}`,
+    keyItems: store.data.狩手结良.关键物品,
   },
   {
     key: 'aoyama',
     name: '青山蓝山',
     color: 'var(--clr-aoyama)',
     avatarUrl: catboxImage('x18i00'),
-    summary: '作家角色，负责提供世界观相关的额外信息。',
-    mood: '迷茫',
-    location: '小镇街道',
-    outfit: '休闲作家风格服装',
-    keyItems: '',
+    summary: '散发着宁和气质的小说家。学生时代时曾在小说创作方面得到智乃的爷爷的关照和建议。名字源自于蓝山咖啡。',
+    mood: `${store.data.青山蓝山.心情状态}`,
+    location: `${store.data.青山蓝山.当前位置}`,
+    outfit: `${store.data.青山蓝山.着装}`,
+    keyItems: store.data.青山蓝山.关键物品,
   },
   {
     key: 'mate',
     name: '真手凛',
     color: 'var(--clr-mate)',
     avatarUrl: catboxImage('kk59ir'),
-    summary: '工作能力出色的社会人角色，参与支线剧情较多。',
-    mood: '认真',
-    location: '小镇街道',
-    outfit: '可爱风格休闲装',
-    keyItems: '',
+    summary:
+      '青山小姐的责任编辑，也是青山小姐高中时期的后辈，自学生时代起就会为了敦促四处游走的青山小姐好好工作而到处寻找她。名字源自于曼特宁咖啡。',
+    mood: `${store.data.真手凛.心情状态}`,
+    location: `${store.data.真手凛.当前位置}`,
+    outfit: `${store.data.真手凛.着装}`,
+    keyItems: store.data.真手凛.关键物品,
   },
   {
     key: 'mocha',
     name: '保登摩卡',
     color: 'var(--clr-mocha)',
     avatarUrl: catboxImage('hi872c'),
-    summary: '心爱的姐姐角色，常以温柔方式影响场景氛围。',
-    mood: '温柔',
-    location: '保登面包房',
-    outfit: '面包店工作服',
-    keyItems: '',
+    summary:
+      '心爱的姐姐，也是家中的大姐，是兄弟姐妹中年龄最小的心爱所依靠和憧憬的对象。平时散发着可靠的姐姐气场，但也有着天然的一面。在老家的保登面包房中工作，擅长做松松软软的面包。名字源自于摩卡咖啡。',
+    mood: `${store.data.保登摩卡.心情状态}`,
+    location: `${store.data.保登摩卡.当前位置}`,
+    outfit: `${store.data.保登摩卡.着装}`,
+    keyItems: store.data.保登摩卡.关键物品,
   },
 ];
 
@@ -719,7 +879,7 @@ function onAvatarImageError(event: Event, characterName: string): void {
 }
 
 function extractRoleplayOptions(message: string): RoleplayOption[] {
-  const block = message.match(/<roleplay_options>([\s\S]*?)<\/roleplay_options>/i)?.[1] ?? '';
+  const block = message.match(/<OPTIONS>([\s\S]*?)<\/OPTIONS>/i)?.[1] ?? '';
   if (!block.trim()) return [];
 
   return [...block.matchAll(/(.+?)[:：]\s*(.+)/g)].map((match, index) => ({
@@ -759,20 +919,55 @@ const lastMessageId = ref(0);
 
 const isEditingMessageVisible = ref(false);
 
-const options = ref<RoleplayOption[]>([
-  { id: 'opt-001', title: '向柜台点单', content: '你走向柜台，礼貌地询问今日推荐饮品。' },
-  { id: 'opt-002', title: '观察店内', content: '你放慢脚步，观察店内客人与角色之间的互动细节。' },
-  { id: 'opt-003', title: '主动搭话', content: '你选择与当前出场角色展开一段自然交流。' },
-]);
+const isWorldMinimized = ref(true);
+const isShopPopularityMinimized = ref(true);
+const shopPopularityPosition = ref({ x: 24, y: 96 });
+const isDraggingShopPopularity = ref(false);
+const dragOffset = ref({ x: 0, y: 0 });
+
+const options = ref<RoleplayOption[]>([{ id: 'opt-001', title: '看到我', content: '说明选项没出或者格式掉了。。' }]);
 
 // Parsed Content
 const extractedContext = ref('');
 const extractedVariables = ref('');
 
+/**
+ * HTML 转义函数 - 防止 XSS 攻击
+ */
+function escapeHtml(text: string): string {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+/**
+ * 简单的类 Markdown 渲染器（安全的 XSS 防护版本）
+ * 支持：**强调**、*斜体*、中英文引号
+ * 流程：先转义 HTML → 再应用 Markdown → 最终结果只有允许的标签
+ */
+function renderSimpleMarkdown(text: string): string {
+  // 第一步：转义所有 HTML 特殊字符（防止 XSS）
+  const escaped = escapeHtml(text);
+
+  // 第二步：应用 Markdown 转换（使用占位符避免冲突）
+  return (
+    escaped
+      // **强调** → <strong>强调</strong>
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      // *斜体* → <em>斜体</em>
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      // 美化中英文引号："text" → 「text」、'text' → 『text』
+      .replace(/"([^&]+)"/g, '「$1」')
+      .replace(/'([^&#]+)'/g, '『$1』')
+  );
+}
+
 function parseNarrativeMessage(message: string) {
   // 提取 CONTEXT
   const contextMatch = message.match(/<CONTEXT>([\s\S]*?)<\/CONTEXT>/i);
-  extractedContext.value = (contextMatch ? contextMatch[1] : message).trim();
+  const rawContext = (contextMatch ? contextMatch[1] : message).trim();
+  // 应用类 Markdown 渲染
+  extractedContext.value = renderSimpleMarkdown(rawContext);
 
   // 提取 OPTIONS
   const optionsMatch = message.match(/<OPTIONS>([\s\S]*?)<\/OPTIONS>/i);
@@ -861,9 +1056,9 @@ const activeCharacterState = computed(() => {
   const vars = chatVariablesSnapshot.value;
 
   const mood =
-    _.get(vars, `${profile.name}.心情状态`) ??
-    _.get(vars, `角色状态.${profile.name}.心情状态`) ??
-    _.get(vars, `角色.${profile.name}.心情状态`) ??
+    _.get(vars, `${profile.name}.当前位置`) ??
+    _.get(vars, `角色状态.${profile.name}.当前位置`) ??
+    _.get(vars, `角色.${profile.name}.当前位置`) ??
     profile.mood;
 
   const location =
@@ -896,9 +1091,7 @@ const activeCharacterState = computed(() => {
           if (count != null && count !== 1) return `${name}×${count}`;
           return name;
         })
-        .join('、') ||
-      profile.keyItems ||
-      '暂无特别标记的物品';
+        .join('、') || '暂无特别标记的物品';
   }
 
   return {
@@ -906,6 +1099,32 @@ const activeCharacterState = computed(() => {
     所在位置: String(location),
     当前着装: String(outfit),
     当前关键物品: keyItemsText,
+  };
+});
+
+const shopPopularity = computed(() => {
+  const raw = store.data.店铺人气 ?? {};
+  return {
+    rabbitHouse: Number(raw['Rabbit House'] ?? 0),
+    甘兔庵: Number(raw.甘兔庵 ?? 0),
+    fleur: Number(raw['Fleur de Lapin'] ?? 0),
+    brightBunny: Number(raw['Bright Bunny'] ?? 0),
+  };
+});
+
+const worldInfo = computed(() => {
+  const raw = store.data.世界 ?? {};
+  const recentEvents = raw.近期事务 ?? {};
+  const eventsArray = Object.entries(recentEvents).map(([name, desc]) => ({
+    name,
+    desc: String(desc),
+  }));
+  return {
+    time: String(raw.当前时间 ?? '--'),
+    location: String(raw.当前地点 ?? '--'),
+    season: String(raw.当前季节 ?? '--'),
+    weather: String(raw.当前天气 ?? '--'),
+    recentEvents: eventsArray,
   };
 });
 
@@ -917,6 +1136,13 @@ function clearTypewriterTimer(): void {
   if (typewriterTimer === null) return;
   window.clearInterval(typewriterTimer);
   typewriterTimer = null;
+}
+
+/**
+ * 从 HTML 中提取纯文本（用于打字机效果）
+ */
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, '');
 }
 
 function applyDisplayMessage(text: string): void {
@@ -932,7 +1158,9 @@ function applyDisplayMessage(text: string): void {
     return;
   }
 
-  const chars = Array.from(text);
+  // 打字机模式：先显示纯文本，完成后应用 HTML
+  const plainText = stripHtml(text);
+  const chars = Array.from(plainText);
   displayedMessage.value = '';
   let index = 0;
 
@@ -942,6 +1170,8 @@ function applyDisplayMessage(text: string): void {
       displayedMessage.value = chars.slice(0, index).join('');
       if (index >= chars.length) {
         clearTypewriterTimer();
+        // 打字机效果完成后，应用完整的 HTML 渲染
+        displayedMessage.value = text;
       }
     },
     settings.value.reduceMotion ? 8 : 20,
@@ -1244,6 +1474,35 @@ function onGlobalKeydown(event: KeyboardEvent): void {
   }
 }
 
+function toggleWorldMinimized(): void {
+  isWorldMinimized.value = !isWorldMinimized.value;
+}
+
+function toggleShopPopularityMinimized(): void {
+  isShopPopularityMinimized.value = !isShopPopularityMinimized.value;
+}
+
+function onShopPopularityDragStart(event: MouseEvent | TouchEvent): void {
+  isDraggingShopPopularity.value = true;
+  const point = 'touches' in event ? event.touches[0] : event;
+  dragOffset.value = {
+    x: point.clientX - shopPopularityPosition.value.x,
+    y: point.clientY - shopPopularityPosition.value.y,
+  };
+}
+
+function onShopPopularityDragMove(event: MouseEvent | TouchEvent): void {
+  if (!isDraggingShopPopularity.value) return;
+  const point = 'touches' in event ? event.touches[0] : event;
+  const x = point.clientX - dragOffset.value.x;
+  const y = point.clientY - dragOffset.value.y;
+  shopPopularityPosition.value = { x, y };
+}
+
+function onShopPopularityDragEnd(): void {
+  isDraggingShopPopularity.value = false;
+}
+
 async function initializeForCurrentChat(): Promise<void> {
   syncLastMessageId();
   refreshLatestAssistantMessage();
@@ -1292,6 +1551,10 @@ onMounted(() => {
   document.title = '点兔文字交互界面';
   upsertMetaDescription('高沉浸文字互动体验，支持选项驱动叙事与世界书联动。');
   document.addEventListener('keydown', onGlobalKeydown);
+  window.addEventListener('mousemove', onShopPopularityDragMove);
+  window.addEventListener('mouseup', onShopPopularityDragEnd);
+  window.addEventListener('touchmove', onShopPopularityDragMove);
+  window.addEventListener('touchend', onShopPopularityDragEnd);
 
   void initializeForCurrentChat();
 
@@ -1337,5 +1600,9 @@ onBeforeUnmount(() => {
   clearTypewriterTimer();
   document.removeEventListener('keydown', onGlobalKeydown);
   eventStops.forEach(stop => stop());
+  window.removeEventListener('mousemove', onShopPopularityDragMove);
+  window.removeEventListener('mouseup', onShopPopularityDragEnd);
+  window.removeEventListener('touchmove', onShopPopularityDragMove);
+  window.removeEventListener('touchend', onShopPopularityDragEnd);
 });
 </script>
