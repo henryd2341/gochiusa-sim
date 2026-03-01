@@ -1,0 +1,611 @@
+```
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>网络联通性检测 - Gochiusa</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+      :root {
+        --bg-primary: #fdf8f3;
+        --bg-secondary: #f5ebe0;
+        --card-bg: rgba(255, 255, 255, 0.85);
+        --accent-gold: #c4a77d;
+        --accent-gold-light: #e8dcc8;
+        --accent-brown: #8b6f4e;
+        --ink-primary: #4a4036;
+        --ink-secondary: #6b5d4d;
+        --ink-muted: #9a8b7a;
+        --line-soft: #e5d9c8;
+        --success: #6b9e7c;
+        --error: #c97b7b;
+        --shadow: 0 4px 20px rgba(139, 111, 78, 0.1);
+        --radius: 16px;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          'Noto Sans SC',
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        background: var(--bg-primary);
+        color: var(--ink-primary);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        position: relative;
+        overflow-x: hidden;
+      }
+
+      /* Background Pattern */
+      body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background:
+          radial-gradient(circle at 20% 30%, rgba(196, 167, 125, 0.08) 0%, transparent 50%),
+          radial-gradient(circle at 80% 70%, rgba(196, 167, 125, 0.06) 0%, transparent 40%);
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      /* Floating Decorations */
+      .floating-accent {
+        position: fixed;
+        pointer-events: none;
+        opacity: 0.15;
+        color: var(--accent-gold);
+      }
+
+      .floating-accent:nth-child(1) {
+        top: 10%;
+        left: 5%;
+        width: 100px;
+        animation: float 6s ease-in-out infinite;
+      }
+
+      .floating-accent:nth-child(2) {
+        bottom: 15%;
+        right: 8%;
+        width: 120px;
+        animation: float 8s ease-in-out infinite reverse;
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0) rotate(0deg);
+        }
+        50% {
+          transform: translateY(-20px) rotate(5deg);
+        }
+      }
+
+      .container {
+        width: 100%;
+        max-width: 600px;
+        background: var(--card-bg);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        border: 1px solid var(--line-soft);
+        backdrop-filter: blur(10px);
+        overflow: hidden;
+      }
+
+      /* Header */
+      .header {
+        background: linear-gradient(135deg, var(--accent-gold-light) 0%, var(--bg-secondary) 100%);
+        padding: 30px;
+        text-align: center;
+        border-bottom: 1px solid var(--line-soft);
+      }
+
+      .header-icon {
+        font-size: 3rem;
+        color: var(--accent-gold);
+        margin-bottom: 15px;
+      }
+
+      .header h1 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--accent-brown);
+        margin-bottom: 8px;
+      }
+
+      .header p {
+        color: var(--ink-muted);
+        font-size: 0.9rem;
+      }
+
+      /* Content */
+      .content {
+        padding: 30px;
+      }
+
+      /* Status Cards */
+      .status-grid {
+        display: grid;
+        gap: 15px;
+        margin-bottom: 25px;
+      }
+
+      .status-card {
+        background: var(--bg-primary);
+        border: 1px solid var(--line-soft);
+        border-radius: 12px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        transition: all 0.3s ease;
+      }
+
+      .status-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(139, 111, 78, 0.08);
+      }
+
+      .status-card.checking {
+        opacity: 0.7;
+      }
+
+      .status-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        flex-shrink: 0;
+        transition: all 0.3s ease;
+      }
+
+      .status-card.checking .status-icon {
+        background: var(--accent-gold-light);
+        color: var(--accent-gold);
+        animation: pulse 1.5s infinite;
+      }
+
+      .status-card.success .status-icon {
+        background: rgba(107, 158, 124, 0.15);
+        color: var(--success);
+      }
+
+      .status-card.error .status-icon {
+        background: rgba(201, 123, 123, 0.15);
+        color: var(--error);
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+      }
+
+      .status-info {
+        flex: 1;
+      }
+
+      .status-info h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+
+      .status-info p {
+        font-size: 0.85rem;
+        color: var(--ink-muted);
+      }
+
+      .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .status-card.success .status-badge {
+        background: rgba(107, 158, 124, 0.15);
+        color: var(--success);
+      }
+
+      .status-card.error .status-badge {
+        background: rgba(201, 123, 123, 0.15);
+        color: var(--error);
+      }
+
+      .status-card.checking .status-badge {
+        background: var(--accent-gold-light);
+        color: var(--accent-gold);
+      }
+
+      /* Action Section */
+      .action-section {
+        background: var(--bg-secondary);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+
+      .action-section h3 {
+        font-size: 1rem;
+        margin-bottom: 12px;
+        color: var(--accent-brown);
+      }
+
+      .action-section p {
+        font-size: 0.9rem;
+        color: var(--ink-secondary);
+        line-height: 1.6;
+        margin-bottom: 15px;
+      }
+
+      /* Buttons */
+      .btn-group {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        padding: 12px 24px;
+        border-radius: 10px;
+        border: 1px solid var(--line-soft);
+        background: var(--card-bg);
+        color: var(--ink-primary);
+        font-size: 0.9rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .btn:hover {
+        background: var(--accent-gold);
+        color: white;
+        border-color: var(--accent-gold);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(196, 167, 125, 0.3);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+      }
+
+      .btn-primary {
+        background: var(--accent-gold);
+        color: white;
+        border-color: var(--accent-gold);
+      }
+
+      .btn-primary:hover {
+        background: var(--accent-brown);
+        border-color: var(--accent-brown);
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      /* Retest Button */
+      .retest-btn {
+        width: 100%;
+        margin-top: 10px;
+        justify-content: center;
+      }
+
+      /* Footer */
+      .footer {
+        text-align: center;
+        padding: 20px;
+        border-top: 1px solid var(--line-soft);
+        color: var(--ink-muted);
+        font-size: 0.8rem;
+      }
+
+      /* Corner Decorations */
+      .corner-decor {
+        position: absolute;
+        width: 60px;
+        height: 60px;
+        opacity: 0.3;
+      }
+
+      .corner-decor.top-left {
+        top: 20px;
+        left: 20px;
+      }
+
+      .corner-decor.top-right {
+        top: 20px;
+        right: 20px;
+        transform: rotate(90deg);
+      }
+
+      .corner-decor.bottom-left {
+        bottom: 20px;
+        left: 20px;
+        transform: rotate(-90deg);
+      }
+
+      .corner-decor.bottom-right {
+        bottom: 20px;
+        right: 20px;
+        transform: rotate(180deg);
+      }
+
+      /* Loading Spinner */
+      .spinner {
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Floating Decorations -->
+    <svg class="floating-accent" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="5 10" />
+      <circle cx="50" cy="50" r="25" fill="none" stroke="currentColor" stroke-width="0.5" />
+    </svg>
+    <svg class="floating-accent" viewBox="0 0 100 100">
+      <path d="M20 50 Q50 20 80 50 T20 50" fill="none" stroke="currentColor" stroke-width="1" />
+    </svg>
+
+    <div class="container">
+      <!-- Header -->
+      <div class="header">
+        <div class="header-icon">
+          <i class="fa-solid fa-wifi"></i>
+        </div>
+        <h1>网络联通性检测</h1>
+        <p>检测对 GitHub 和 Catbox 的访问状态</p>
+      </div>
+
+      <!-- Content -->
+      <div class="content">
+        <!-- Status Grid -->
+        <div class="status-grid">
+          <!-- GitHub Status -->
+          <div class="status-card checking" id="github-card">
+            <div class="status-icon">
+              <i class="fa-brands fa-github"></i>
+            </div>
+            <div class="status-info">
+              <h3>GitHub</h3>
+              <p>正在检测连接状态...</p>
+            </div>
+            <span class="status-badge">检测中</span>
+          </div>
+
+          <!-- Catbox Status -->
+          <div class="status-card checking" id="catbox-card">
+            <div class="status-icon">
+              <i class="fa-solid fa-box"></i>
+            </div>
+            <div class="status-info">
+              <h3>Catbox</h3>
+              <p>正在检测连接状态...</p>
+            </div>
+            <span class="status-badge">检测中</span>
+          </div>
+        </div>
+
+        <!-- Action Section -->
+        <div class="action-section">
+          <h3><i class="fa-solid fa-lightbulb" style="color: var(--accent-gold)"></i> 切换开场白</h3>
+          <p>
+            无论网络检测结果如何，您都可以切换开场白来开始对话。但前端界面可能会受到网络状态的影响。
+          </p>
+          <ol>
+            <li><i class="fa-solid fa-file-lines"></i> 开场白 1 - 春季</li>
+            <li><i class="fa-solid fa-file-lines"></i> 开场白 2 - 夏季</li>
+          </ol>
+        </div>
+
+        <!-- Retest Button -->
+        <button class="btn btn-primary retest-btn" onclick="startDetection()">
+          <i class="fa-solid fa-rotate-right"></i> 重新检测
+        </button>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <i class="fa-solid fa-mug-hot" style="color: var(--accent-gold)"></i>
+        <span>Gochiusa Network Checker</span>
+      </div>
+    </div>
+
+    <script>
+      // 检测配置
+      const targets = {
+        github: {
+          name: 'GitHub',
+          url: 'https://github.com/favicon.ico',
+          timeout: 5000,
+        },
+        catbox: {
+          name: 'Catbox',
+          url: 'https://catbox.moe/favicon.ico',
+          timeout: 5000,
+        },
+      };
+
+      // 更新状态卡片
+      function updateCard(id, status, message) {
+        const card = document.getElementById(id + '-card');
+        const badge = card.querySelector('.status-badge');
+        const info = card.querySelector('.status-info p');
+        const icon = card.querySelector('.status-icon i');
+
+        card.className = 'status-card ' + status;
+        info.textContent = message;
+
+        if (status === 'checking') {
+          badge.textContent = '检测中';
+          icon.className = 'fa-solid fa-spinner spinner';
+        } else if (status === 'success') {
+          badge.textContent = '可用';
+          icon.className = id === 'github' ? 'fa-brands fa-github' : 'fa-solid fa-box';
+        } else {
+          badge.textContent = '不可用';
+          icon.className = id === 'github' ? 'fa-brands fa-github' : 'fa-solid fa-box';
+        }
+      }
+
+      // 检测单个目标
+      function checkTarget(key, config) {
+        return new Promise(resolve => {
+          const img = new Image();
+          let resolved = false;
+
+          const timer = setTimeout(() => {
+            if (!resolved) {
+              resolved = true;
+              img.src = '';
+              resolve(false);
+            }
+          }, config.timeout);
+
+          img.onload = function () {
+            if (!resolved) {
+              resolved = true;
+              clearTimeout(timer);
+              resolve(true);
+            }
+          };
+
+          img.onerror = function () {
+            if (!resolved) {
+              resolved = true;
+              clearTimeout(timer);
+              resolve(false);
+            }
+          };
+
+          // 添加随机参数避免缓存
+          img.src = config.url + '?t=' + Date.now();
+        });
+      }
+
+      // 开始检测
+      async function startDetection() {
+        // 重置状态
+        updateCard('github', 'checking', '正在检测连接状态...');
+        updateCard('catbox', 'checking', '正在检测连接状态...');
+
+        // 并行检测
+        const results = await Promise.all([
+          checkTarget('github', targets.github).then(success => {
+            updateCard(
+              'github',
+              success ? 'success' : 'error',
+              success ? '连接正常，可以访问' : '连接失败，请检查网络',
+            );
+            return { name: 'GitHub', success };
+          }),
+          checkTarget('catbox', targets.catbox).then(success => {
+            updateCard(
+              'catbox',
+              success ? 'success' : 'error',
+              success ? '连接正常，可以访问' : '连接失败，请检查网络',
+            );
+            return { name: 'Catbox', success };
+          }),
+        ]);
+
+        // 显示汇总提示
+        const allSuccess = results.every(r => r.success);
+        const allFailed = results.every(r => !r.success);
+
+        if (allSuccess) {
+          showNotification('所有服务连接正常，可无忧使用前端界面', 'success');
+        } else if (allFailed) {
+          showNotification('网络连接存在异常，前端界面可能无法正常显示', 'error');
+        } else {
+          const failed = results
+            .filter(r => !r.success)
+            .map(r => r.name)
+            .join('、');
+          showNotification(`${failed} 连接异常`, 'warning');
+        }
+      }
+
+      // 显示通知
+      function showNotification(message, type) {
+        // 创建通知元素
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-100px);
+        background: ${type === 'success' ? 'var(--success)' : type === 'error' ? 'var(--error)' : 'var(--accent-gold)'};
+        color: white;
+        padding: 12px 24px;
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        z-index: 1000;
+        font-size: 0.9rem;
+        transition: transform 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      `;
+
+        const icon =
+          type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
+        notification.innerHTML = `<i class="fa-solid ${icon}"></i> ${message}`;
+
+        document.body.appendChild(notification);
+
+        // 动画进入
+        setTimeout(() => {
+          notification.style.transform = 'translateX(-50%) translateY(0)';
+        }, 10);
+
+        // 自动消失
+        setTimeout(() => {
+          notification.style.transform = 'translateX(-50%) translateY(-100px)';
+          setTimeout(() => notification.remove(), 300);
+        }, 3000);
+      }
+
+      // 页面加载完成后自动开始检测
+      document.addEventListener('DOMContentLoaded', startDetection);
+    </script>
+  </body>
+</html>
+```
