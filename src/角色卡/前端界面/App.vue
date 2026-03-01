@@ -9,14 +9,50 @@
     <!-- Background Layer -->
     <div class="background-layer">
       <div class="bg-pattern"></div>
+      <!-- Floating Accents -->
+      <!-- <svg class="floating-accent" style="top: 15%; left: 5%; width: 120px;" viewBox="0 0 100 100">
+        <path fill="currentColor" d="M50 10 A40 40 0 0 1 90 50 A40 40 0 0 1 50 90 A40 40 0 0 1 10 50 A40 40 0 0 1 50 10 Z" fill-opacity="0.1" />
+        <circle cx="50" cy="50" r="30" stroke="currentColor" stroke-width="0.5" fill="none" stroke-dasharray="2 4" />
+      </svg>
+      <svg class="floating-accent" style="bottom: 10%; right: 5%; width: 150px; animation-delay: -2s;" viewBox="0 0 100 100">
+        <path fill="currentColor" d="M20 50 Q50 20 80 50 T20 50" fill-opacity="0.05" />
+      </svg> -->
     </div>
 
     <!-- Splash Screen -->
     <transition name="fade">
       <section v-if="isSplashScreenVisible" class="splash-screen">
+        <!-- Corner Decors -->
+        <div
+          v-for="pos in ['top-left', 'top-right', 'bottom-left', 'bottom-right']"
+          :key="pos"
+          :class="['splash-decor', pos]"
+        >
+          <svg viewBox="0 0 200 200" width="100%" height="100%">
+            <defs>
+              <radialGradient id="grad-decor" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="currentColor" stop-opacity="0.8" />
+                <stop offset="100%" stop-color="currentColor" stop-opacity="0" />
+              </radialGradient>
+            </defs>
+            <circle
+              cx="0"
+              cy="0"
+              r="160"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1"
+              stroke-dasharray="10 20"
+              opacity="0.4"
+            />
+            <path d="M0 180 Q 80 180 180 0" fill="none" stroke="currentColor" stroke-width="2" />
+            <circle cx="40" cy="140" r="15" fill="none" stroke="currentColor" stroke-width="1.5" />
+            <path d="M10 100 L30 120 M40 80 L60 100" stroke="currentColor" stroke-width="1" />
+          </svg>
+        </div>
+
         <div class="splash-logo animate-fadeInDown">
-          <h1 class="splash-title">ご注文はうさぎですか？</h1>
-          <p class="splash-subtitle">BLOOM SIMULATOR</p>
+          <img :src="titleBrownLogo" />
         </div>
         <button class="press-start-btn animate-fadeInUp" @click="handleStart">
           <span class="animate-pulse">PRESS START</span>
@@ -27,7 +63,7 @@
     <!-- Top Navigation -->
     <header id="region-top-nav">
       <div class="brand-logo">
-        <span class="brand-main">点兔叙事界面</span>
+        <span class="brand-main">叙事界面</span>
         <span class="brand-sub">Gochiusa Narrative Interface</span>
       </div>
 
@@ -58,11 +94,41 @@
               <i class="fa-solid fa-arrows-rotate"></i>
               <span>同步</span>
             </button>
+            <button class="btn nav-btn" @click="handleSwipe">
+              <i class="fa-solid fa-shuffle"></i>
+              <span>重新生成</span>
+            </button>
+            <button class="btn nav-btn" @click="openEditLastMessage">
+              <i class="fa-solid fa-pen-to-square"></i>
+              <span>编辑</span>
+            </button>
           </div>
         </div>
-        <article id="story-current-message" aria-live="polite">
-          {{ displayedMessage }}
-        </article>
+        <article
+          v-show="!isEditingMessageVisible"
+          id="story-current-message"
+          aria-live="polite"
+          v-html="displayedMessage"
+        ></article>
+        <div v-if="isEditingMessageVisible" id="edit-last-message" class="edit-last-message">
+          <label for="edit-last-message-textarea" class="sr-only">编辑上一条消息</label>
+          <textarea
+            id="edit-last-message-textarea"
+            v-model="editingMessageText"
+            class="edit-textarea"
+            placeholder="在此编辑上一条消息内容..."
+          ></textarea>
+          <div class="edit-actions">
+            <button class="btn nav-btn" :disabled="!editingMessageText.trim()" @click="saveEditedMessage">
+              <i class="fa-solid fa-floppy-disk"></i>
+              <span>保存编辑</span>
+            </button>
+            <button class="btn nav-btn" @click="cancelEdit">
+              <i class="fa-solid fa-xmark"></i>
+              <span>取消编辑</span>
+            </button>
+          </div>
+        </div>
       </section>
 
       <!-- Options Panel -->
@@ -178,7 +244,12 @@
                   v-for="msg in historyFilteredMessages"
                   :key="msg.message_id"
                   class="card"
-                  style="padding: 15px; border: 1px solid var(--line-soft); border-radius: 12px; background: white"
+                  style="
+                    padding: 15px;
+                    border: 1px solid var(--line-soft);
+                    border-radius: 12px;
+                    background: var(--card-bg);
+                  "
                 >
                   <div
                     style="
@@ -225,19 +296,56 @@
                   v-for="entry in filteredWorldbookEntries"
                   :key="entry.uid"
                   class="card"
-                  style="padding: 15px; border: 1px solid var(--line-soft); border-radius: 12px; background: white"
+                  style="
+                    padding: 15px;
+                    border: 1px solid var(--line-soft);
+                    border-radius: 12px;
+                    background: var(--card-bg);
+                  "
                 >
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px">
-                    <strong style="color: var(--accent-gold)">{{ entry.name }}</strong>
-                    <button
-                      class="btn"
-                      :style="{ color: entry.enabled ? 'green' : 'red' }"
-                      @click="toggleWorldbookEntryState(entry.uid, !entry.enabled)"
-                    >
-                      {{ entry.enabled ? '已启用' : '已禁用' }}
-                    </button>
+                  <div
+                    style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px"
+                  >
+                    <div>
+                      <strong style="display: block; color: var(--accent-gold); font-size: 1.1rem">{{
+                        entry.name
+                      }}</strong>
+                      <div style="display: flex; gap: 8px; margin-top: 4px">
+                        <span
+                          v-if="entry.strategy.type === 'constant'"
+                          class="status-chip"
+                          style="background: #eef; color: #55a; font-size: 0.7rem"
+                          >常驻</span
+                        >
+                        <span
+                          v-if="entry.strategy.type === 'selective'"
+                          class="status-chip"
+                          style="background: #efe; color: #5a5; font-size: 0.7rem"
+                          >条件触发</span
+                        >
+                        <span
+                          v-if="entry.strategy.type === 'vectorized'"
+                          class="status-chip"
+                          style="background: #eee; color: #666; font-size: 0.7rem"
+                          >向量化</span
+                        >
+                      </div>
+                    </div>
+                    <label class="toggle-switch">
+                      <input
+                        type="checkbox"
+                        :checked="entry.enabled"
+                        @change="toggleWorldbookEntryState(entry.uid, !entry.enabled)"
+                      />
+                      <span class="slider"></span>
+                    </label>
                   </div>
-                  <p style="font-size: 0.9rem; color: var(--ink-1)">{{ truncateText(entry.content, 150) }}</p>
+                  <p style="font-size: 0.85rem; color: var(--ink-1); line-height: 1.5; margin-bottom: 10px">
+                    {{ truncateText(entry.content, 100) }}
+                  </p>
+                  <button class="btn" style="width: 100%; font-size: 0.8rem" @click="viewWorldbookDetail(entry)">
+                    查看完整条目内容
+                  </button>
                 </div>
               </div>
             </div>
@@ -342,7 +450,12 @@
                 </div>
                 <div
                   class="card"
-                  style="padding: 20px; border: 1px solid var(--line-soft); border-radius: 16px; background: white"
+                  style="
+                    padding: 20px;
+                    border: 1px solid var(--line-soft);
+                    border-radius: 16px;
+                    background: var(--card-bg);
+                  "
                 >
                   <div style="display: flex; gap: 20px; align-items: flex-start">
                     <img
@@ -352,6 +465,7 @@
                         height: 100px;
                         border-radius: 12px;
                         object-fit: cover;
+                        flex-shrink: 0;
                         border: 2px solid var(--accent-gold);
                       "
                     />
@@ -374,84 +488,136 @@
       </div>
     </transition>
 
-    <!-- Perspective Selector -->
+    <!-- Worldbook Detail Modal -->
     <transition name="fade">
-      <div v-if="showPerspectiveSelector" class="modal-scrim">
-        <div class="modal-shell" style="max-width: 800px">
+      <div v-if="selectedEntry" class="modal-scrim" @click="selectedEntry = null">
+        <div class="modal-shell" style="max-width: 700px" @click.stop>
           <header class="modal-header">
-            <h2>请选择主视角</h2>
+            <h2>{{ selectedEntry.name }}</h2>
+            <button class="nav-btn" @click="selectedEntry = null"><i class="fa-solid fa-xmark"></i></button>
           </header>
           <div class="modal-body">
-            <p style="margin-bottom: 20px; color: var(--ink-1)">
-              首次进入当前聊天，请选择一个主视角以注入对应的开场白。
-            </p>
-            <div
-              style="
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-                gap: 15px;
-                margin-bottom: 30px;
-              "
-            >
-              <button
-                v-for="item in perspectiveEntries"
-                :key="item.key"
-                class="card"
-                :style="{
-                  border:
-                    selectedPerspective === item.key ? '2px solid var(--accent-gold)' : '1px solid var(--line-soft)',
-                  padding: '15px',
-                  cursor: 'pointer',
-                  background: 'white',
-                  textAlign: 'left',
-                }"
-                @click="selectedPerspective = item.key"
-              >
-                <strong style="display: block; margin-bottom: 5px; color: var(--accent-gold)">{{ item.key }}</strong>
-                <span style="font-size: 0.85rem; color: var(--ink-1)">{{ item.description }}</span>
-              </button>
+            <div style="white-space: pre-wrap; line-height: 1.6; font-family: 'Noto Sans SC', sans-serif">
+              {{ selectedEntry.content }}
             </div>
-            <div
-              v-if="selectedPerspective"
-              class="card"
-              style="padding: 20px; background: var(--bg-1); border-radius: 12px; margin-bottom: 20px"
-            >
-              <h3 style="font-size: 0.9rem; margin-bottom: 10px; color: var(--ink-1)">开场白预览：</h3>
-              <p style="font-family: 'Noto Serif SC', serif; line-height: 1.6">{{ selectedOpeningPreview }}</p>
-            </div>
-            <button
-              class="btn-send"
-              style="width: 100%; padding: 15px; font-size: 1.1rem"
-              :disabled="!selectedPerspective"
-              @click="confirmPerspective"
-            >
-              确认并开始故事
-            </button>
           </div>
         </div>
       </div>
     </transition>
+
+    <div
+      v-if="!isSplashScreenVisible"
+      class="floating-panel floating-panel-shop"
+      :class="{ minimized: isWorldMinimized && isShopPopularityMinimized }"
+      :style="{ transform: `translate(${shopPopularityPosition.x}px, ${shopPopularityPosition.y}px)` }"
+      @mousedown.stop="onShopPopularityDragStart"
+      @touchstart.stop.prevent="onShopPopularityDragStart"
+    >
+      <!-- 世界部分 -->
+      <header class="floating-panel-header" :class="{ 'section-header': true }">
+        <div class="floating-panel-title">
+          <i class="fa-solid fa-globe"></i>
+          <span>世界</span>
+        </div>
+        <button class="mini-btn" type="button" @click.stop="toggleWorldMinimized">
+          <i class="fa-solid" :class="isWorldMinimized ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+        </button>
+      </header>
+      <transition name="slide-up">
+        <div v-if="!isWorldMinimized" class="floating-panel-body world-section-body">
+          <div class="world-info-row">
+            <span class="world-label">时间</span>
+            <span class="world-value">{{ worldInfo.time }}</span>
+          </div>
+          <div class="world-info-row">
+            <span class="world-label">地点</span>
+            <span class="world-value">{{ worldInfo.location }}</span>
+          </div>
+          <div class="world-info-row">
+            <span class="world-label">季节</span>
+            <span class="world-value">{{ worldInfo.season }}</span>
+          </div>
+          <div class="world-info-row">
+            <span class="world-label">天气</span>
+            <span class="world-value">{{ worldInfo.weather }}</span>
+          </div>
+          <div v-if="worldInfo.recentEvents.length > 0" class="world-info-row world-events-row">
+            <span class="world-label">近期事务</span>
+            <div class="world-events-list">
+              <div v-for="(event, index) in worldInfo.recentEvents" :key="index" class="world-event-item">
+                <span class="event-name">{{ event.name }}</span>
+                <span class="event-desc">{{ event.desc }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </transition>
+
+      <!-- 分隔线 -->
+      <div v-if="!isWorldMinimized || !isShopPopularityMinimized" class="floating-panel-divider"></div>
+
+      <!-- 店铺人气部分 -->
+      <header class="floating-panel-header" :class="{ 'section-header': true }">
+        <div class="floating-panel-title">
+          <i class="fa-solid fa-mug-saucer"></i>
+          <span>店铺人气</span>
+        </div>
+        <button class="mini-btn" type="button" @click.stop="toggleShopPopularityMinimized">
+          <i class="fa-solid" :class="isShopPopularityMinimized ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+        </button>
+      </header>
+      <transition name="slide-up">
+        <div v-if="!isShopPopularityMinimized" class="floating-panel-body">
+          <div class="shop-popularity-row">
+            <span class="shop-name">Rabbit House</span>
+            <div class="shop-meter">
+              <div class="shop-meter-fill shop-meter-rabbit" :style="{ width: shopPopularity.rabbitHouse + '%' }"></div>
+            </div>
+            <span class="shop-value">{{ shopPopularity.rabbitHouse }}%</span>
+          </div>
+          <div class="shop-popularity-row">
+            <span class="shop-name">甘兔庵</span>
+            <div class="shop-meter">
+              <div class="shop-meter-fill shop-meter-chiya" :style="{ width: shopPopularity.甘兔庵 + '%' }"></div>
+            </div>
+            <span class="shop-value">{{ shopPopularity.甘兔庵 }}%</span>
+          </div>
+          <div class="shop-popularity-row">
+            <span class="shop-name">Fleur de Lapin</span>
+            <div class="shop-meter">
+              <div class="shop-meter-fill shop-meter-syaro" :style="{ width: shopPopularity.fleur + '%' }"></div>
+            </div>
+            <span class="shop-value">{{ shopPopularity.fleur }}%</span>
+          </div>
+          <div class="shop-popularity-row">
+            <span class="shop-name">Bright Bunny</span>
+            <div class="shop-meter">
+              <div class="shop-meter-fill shop-meter-fuyu" :style="{ width: shopPopularity.brightBunny + '%' }"></div>
+            </div>
+            <span class="shop-value">{{ shopPopularity.brightBunny }}%</span>
+          </div>
+        </div>
+      </transition>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { defineMvuDataStore } from '@util/mvu';
+import { Dictionary } from 'lodash';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import openingConfigRaw from './config/opening_by_perspective.yaml';
+import { Schema } from '../schema';
+import titleBrownLogo from './assets/icons/title_brown.svg?url';
+
+const useDataStore = defineMvuDataStore(Schema, { type: 'message', message_id: getCurrentMessageId() });
+const store = useDataStore();
+const editingMessageText = ref('');
+const lastMessageRaw = ref<ChatMessage | null>(null);
 
 type FeatureTabKey = 'history' | 'worldbook' | 'settings' | 'character';
 type DisplayMode = 'instant' | 'typewriter' | 'segment';
 type ThemeMode = 'theme-latte-noir' | 'theme-midnight-salon';
 type FontScale = 'small' | 'medium' | 'large';
-type PerspectiveKey = '心爱' | '智乃' | '理世' | '千夜' | '纱路' | '无';
-
-type PerspectiveEntry = {
-  description: string;
-  opening: string;
-};
-
-type OpeningConfig = {
-  perspectives: Record<PerspectiveKey, PerspectiveEntry>;
-};
 
 type RoleplayOption = {
   id: string;
@@ -476,38 +642,7 @@ type CharacterProfile = {
   mood: string;
   location: string;
   outfit: string;
-  relation: string;
-};
-
-const perspectiveKeys: PerspectiveKey[] = ['心爱', '智乃', '理世', '千夜', '纱路', '无'];
-
-const fallbackOpeningConfig: OpeningConfig = {
-  perspectives: {
-    心爱: {
-      description: '以保登心爱的情绪与语气观察事件发展，优先关注热情、主动与当下氛围。',
-      opening: '你在清晨推开兔屋咖啡馆的大门，熟悉的甜香与轻快脚步声同时向你迎来。',
-    },
-    智乃: {
-      description: '以香风智乃的克制与细腻感知推进剧情，优先关注细节与隐含情绪变化。',
-      opening: '你端正地整理围裙与托盘，抬眼时，门铃正好响起，今天的第一位客人到了。',
-    },
-    理世: {
-      description: '以天天座理世的执行力推进剧情，优先处理秩序、任务与突发状况。',
-      opening: '你快速扫视店内座位与动线，确认一切就绪后，今天的营业正式开始。',
-    },
-    千夜: {
-      description: '以宇治松千夜的温婉风格观察互动，优先关注礼节、安抚与氛围调和。',
-      opening: '你轻轻摆好茶点，窗外风铃声细微晃动，一段柔和却重要的对话即将开始。',
-    },
-    纱路: {
-      description: '以桐间纱路的谨慎与责任感参与剧情，优先关注风险与规则边界。',
-      opening: '你深呼吸后推门而入，尽量让自己的步伐显得从容，不让紧张暴露在表情里。',
-    },
-    无: {
-      description: '使用中立视角，不绑定具体角色语气，更适合观察多角色并行叙事。',
-      opening: '午后钟声落下，你推门进入熟悉的咖啡馆，空气里有甜点与咖啡的暖香。',
-    },
-  },
+  keyItems: Dictionary<{ 描述: string; 数量: number }>;
 };
 
 const defaultSettings: UISettings = {
@@ -519,7 +654,6 @@ const defaultSettings: UISettings = {
 };
 
 const SETTINGS_STORAGE_KEY = 'gochiusa.frontend.settings.v2';
-const PERSPECTIVE_VAR_PATH = '前端界面.主视角';
 
 function catboxImage(code: string): string {
   return `https://files.catbox.moe/${code}.png`;
@@ -531,93 +665,164 @@ const characterProfiles: CharacterProfile[] = [
     name: '保登心爱',
     color: 'var(--clr-cocoa)',
     avatarUrl: catboxImage('qjltca'),
-    summary: '活力型引导角色，擅长快速拉近关系并推动场景气氛。',
-    mood: '开朗',
-    location: '兔屋咖啡馆前厅',
-    outfit: '咖啡厅制服',
-    relation: '友好',
+    summary: 'Rabbit House寄宿店员。喜欢毛茸茸的东西。把智乃视为妹妹一样的存在。名字源自于热可可（Hot Cocoa）。',
+    mood: store.data.保登心爱.心情状态,
+    location: store.data.保登心爱.当前位置,
+    outfit: store.data.保登心爱.着装,
+    keyItems: store.data.保登心爱.关键物品,
   },
   {
     key: 'chino',
     name: '香风智乃',
     color: 'var(--clr-chino)',
     avatarUrl: catboxImage('6t09pw'),
-    summary: '观察型角色，擅长在安静场景中提供高价值细节。',
-    mood: '冷静',
-    location: '吧台内侧',
-    outfit: '咖啡厅制服',
-    relation: '信任建立中',
+    summary:
+      'Rabbit House家的独生女。性格冷淡的无口系少女，独立能力强但不擅长与人相处。在咖啡方面有着渊博的知识。名字源自于卡布奇诺。',
+    mood: store.data.香风智乃.心情状态,
+    location: store.data.香风智乃.当前位置,
+    outfit: store.data.香风智乃.着装,
+    keyItems: store.data.香风智乃.关键物品,
   },
   {
     key: 'rize',
     name: '天天座理世',
     color: 'var(--clr-rize)',
     avatarUrl: catboxImage('n9szhx'),
-    summary: '执行型角色，擅长处理节奏与秩序相关场景。',
-    mood: '专注',
-    location: '点单与出餐动线',
-    outfit: '咖啡厅制服',
-    relation: '可靠同伴',
+    summary:
+      '在Rabbit House打工的店员。平时是个会携带武器的、浑身散发着军人气质的强力角色，内心里却也有着少女的一面。名字源自于法国熏香加味绿茶夏日香气（Thé Des Alizés）。',
+    mood: `${store.data.天天座理世.心情状态}`,
+    location: `${store.data.天天座理世.当前位置}`,
+    outfit: `${store.data.天天座理世.着装}`,
+    keyItems: store.data.天天座理世.关键物品,
   },
   {
     key: 'chiya',
     name: '宇治松千夜',
     color: 'var(--clr-chiya)',
     avatarUrl: catboxImage('v4spnt'),
-    summary: '情绪调和型角色，擅长缓冲冲突与提升舒适感。',
-    mood: '温和',
-    location: '甜点展示区',
-    outfit: '和风改良制服',
-    relation: '亲近',
+    summary:
+      '和风甜品店甘兔庵的看板娘。有着大和抚子的相貌和气质。兴趣是为菜品起各种各样古怪的名字。名字源自于宇治抹茶。',
+    mood: `${store.data.宇治松千夜.心情状态}`,
+    location: `${store.data.宇治松千夜.当前位置}`,
+    outfit: `${store.data.宇治松千夜.着装}`,
+    keyItems: store.data.宇治松千夜.关键物品,
   },
   {
     key: 'syaro',
     name: '桐间纱路',
     color: 'var(--clr-syaro)',
     avatarUrl: catboxImage('b982xz'),
-    summary: '谨慎型角色，适合调查、推理与高压交互场景。',
-    mood: '紧张但坚定',
-    location: '门厅与过道',
-    outfit: '学院日常装',
-    relation: '逐步加深',
+    summary:
+      '在Fleur du Lapin打工的店员，千夜的发小。有着贵族大小姐一般的气质，却过着简朴的生活。也有着害怕兔子以及容易醉咖啡的一面。名字源自于乞力马扎罗咖啡（Kilimanjaro）。',
+    mood: `${store.data.桐间纱路.心情状态}`,
+    location: `${store.data.桐间纱路.当前位置}`,
+    outfit: `${store.data.桐间纱路.着装}`,
+    keyItems: store.data.桐间纱路.关键物品,
+  },
+  {
+    key: 'maya',
+    name: '条河麻耶',
+    color: 'var(--clr-maya)',
+    avatarUrl: catboxImage('bmw44n'),
+    summary: '活泼元气，个性爽朗，大大咧咧的高一新生，善于带动团队气氛。名字源自于产自玉玛雅的大吉岭红茶。',
+    mood: `${store.data.条河麻耶.心情状态}`,
+    location: `${store.data.条河麻耶.当前位置}`,
+    outfit: `${store.data.条河麻耶.着装}`,
+    keyItems: store.data.条河麻耶.关键物品,
+  },
+  {
+    key: 'megu',
+    name: '奈津惠',
+    color: 'var(--clr-megu)',
+    avatarUrl: catboxImage('koovsy'),
+    summary: '个性温和，有点天然呆的高一新生，情绪变化细腻。名字源自于肉豆蔻（Nutmeg）。',
+    mood: `${store.data.奈津惠.心情状态}`,
+    location: `${store.data.奈津惠.当前位置}`,
+    outfit: `${store.data.奈津惠.着装}`,
+    keyItems: store.data.奈津惠.关键物品,
+  },
+  {
+    key: 'fuyu',
+    name: '风衣叶冬优',
+    color: 'var(--clr-fuyu)',
+    avatarUrl: catboxImage('lckv74'),
+    summary:
+      '寄宿在Bright Bunny的高一新生，升入高中以前在大都市生活，与城市中的猫咪们作伴。擅长国际象棋和腹语术。名字源自于短舌匹菊（Feverfew）。',
+    mood: `${store.data.风衣叶冬优.心情状态}`,
+    location: `${store.data.风衣叶冬优.当前位置}`,
+    outfit: `${store.data.风衣叶冬优.着装}`,
+    keyItems: store.data.风衣叶冬优.关键物品,
+  },
+  {
+    key: 'natsume',
+    name: '神沙夏明',
+    color: 'var(--clr-natsume)',
+    avatarUrl: catboxImage('usclrp'),
+    summary: 'Bright Bunny社长家的千金，是双胞胎中的妹妹，性格傲娇。名字源自于红枣姜茶。',
+    mood: `${store.data.神沙夏明.心情状态}`,
+    location: `${store.data.神沙夏明.当前位置}`,
+    outfit: `${store.data.神沙夏明.着装}`,
+    keyItems: store.data.神沙夏明.关键物品,
+  },
+  {
+    key: 'eru',
+    name: '神沙映月',
+    color: 'var(--clr-eru)',
+    avatarUrl: catboxImage('r10sh1'),
+    summary: 'Bright Bunny社长家的千金，是双胞胎中的姐姐，性格比较天然呆和脱线。名字源自于姜汁汽水（Ginger Ale）。',
+    mood: `${store.data.神沙映月.心情状态}`,
+    location: `${store.data.神沙映月.当前位置}`,
+    outfit: `${store.data.神沙映月.着装}`,
+    keyItems: store.data.神沙映月.关键物品,
+  },
+  {
+    key: 'yura',
+    name: '狩手结良',
+    color: 'var(--clr-yura)',
+    avatarUrl: catboxImage('a3uv0i'),
+    summary:
+      '理世在高中和大学时的同学，高中时担任吹箭部长，上大学后在理世家兼职女仆。由于两人父亲之间的关系，也是理世的发小。名字源自于金盏花茶（Calendula）。',
+    mood: `${store.data.狩手结良.心情状态}`,
+    location: `${store.data.狩手结良.当前位置}`,
+    outfit: `${store.data.狩手结良.着装}`,
+    keyItems: store.data.狩手结良.关键物品,
+  },
+  {
+    key: 'aoyama',
+    name: '青山蓝山',
+    color: 'var(--clr-aoyama)',
+    avatarUrl: catboxImage('x18i00'),
+    summary: '散发着宁和气质的小说家。学生时代时曾在小说创作方面得到智乃的爷爷的关照和建议。名字源自于蓝山咖啡。',
+    mood: `${store.data.青山蓝山.心情状态}`,
+    location: `${store.data.青山蓝山.当前位置}`,
+    outfit: `${store.data.青山蓝山.着装}`,
+    keyItems: store.data.青山蓝山.关键物品,
+  },
+  {
+    key: 'mate',
+    name: '真手凛',
+    color: 'var(--clr-mate)',
+    avatarUrl: catboxImage('kk59ir'),
+    summary:
+      '青山小姐的责任编辑，也是青山小姐高中时期的后辈，自学生时代起就会为了敦促四处游走的青山小姐好好工作而到处寻找她。名字源自于曼特宁咖啡。',
+    mood: `${store.data.真手凛.心情状态}`,
+    location: `${store.data.真手凛.当前位置}`,
+    outfit: `${store.data.真手凛.着装}`,
+    keyItems: store.data.真手凛.关键物品,
+  },
+  {
+    key: 'mocha',
+    name: '保登摩卡',
+    color: 'var(--clr-mocha)',
+    avatarUrl: catboxImage('hi872c'),
+    summary:
+      '心爱的姐姐，也是家中的大姐，是兄弟姐妹中年龄最小的心爱所依靠和憧憬的对象。平时散发着可靠的姐姐气场，但也有着天然的一面。在老家的保登面包房中工作，擅长做松松软软的面包。名字源自于摩卡咖啡。',
+    mood: `${store.data.保登摩卡.心情状态}`,
+    location: `${store.data.保登摩卡.当前位置}`,
+    outfit: `${store.data.保登摩卡.着装}`,
+    keyItems: store.data.保登摩卡.关键物品,
   },
 ];
-
-const perspectiveToCharacter: Record<PerspectiveKey, string> = {
-  心爱: 'cocoa',
-  智乃: 'chino',
-  理世: 'rize',
-  千夜: 'chiya',
-  纱路: 'syaro',
-  无: 'cocoa',
-};
-
-function isPerspectiveKey(value: unknown): value is PerspectiveKey {
-  return perspectiveKeys.includes(value as PerspectiveKey);
-}
-
-function normalizeOpeningConfig(input: unknown): OpeningConfig {
-  const base = _.cloneDeep(fallbackOpeningConfig);
-  if (!input || typeof input !== 'object') return base;
-
-  const raw = (input as { perspectives?: Record<string, PerspectiveEntry> }).perspectives;
-  if (!raw || typeof raw !== 'object') return base;
-
-  perspectiveKeys.forEach(key => {
-    const candidate = raw[key];
-    if (
-      candidate &&
-      typeof candidate.description === 'string' &&
-      candidate.description.trim().length > 0 &&
-      typeof candidate.opening === 'string' &&
-      candidate.opening.trim().length > 0
-    ) {
-      base.perspectives[key] = { description: candidate.description, opening: candidate.opening };
-    }
-  });
-
-  return base;
-}
 
 function loadSettings(): UISettings {
   try {
@@ -674,7 +879,7 @@ function onAvatarImageError(event: Event, characterName: string): void {
 }
 
 function extractRoleplayOptions(message: string): RoleplayOption[] {
-  const block = message.match(/<roleplay_options>([\s\S]*?)<\/roleplay_options>/i)?.[1] ?? '';
+  const block = message.match(/<OPTIONS>([\s\S]*?)<\/OPTIONS>/i)?.[1] ?? '';
   if (!block.trim()) return [];
 
   return [...block.matchAll(/(.+?)[:：]\s*(.+)/g)].map((match, index) => ({
@@ -684,18 +889,15 @@ function extractRoleplayOptions(message: string): RoleplayOption[] {
   }));
 }
 
-const openingConfig = normalizeOpeningConfig(openingConfigRaw);
 const settings = ref<UISettings>(loadSettings());
 
 const isFeatureModalVisible = ref(false);
 const activeTab = ref<FeatureTabKey>('history');
-const showPerspectiveSelector = ref(false);
 const isSplashScreenVisible = ref(true);
-const selectedPerspective = ref<PerspectiveKey | null>(null);
-const perspectiveConfirmed = ref(false);
 const customOption = ref('');
 const isFullscreen = ref(false);
 const isBusyGenerating = ref(false);
+const selectedEntry = ref<WorldbookEntry | null>(null);
 
 const rawCurrentMessage = ref('正在等待剧情推进，请选择下一步行动。');
 const displayedMessage = ref('正在等待剧情推进，请选择下一步行动。');
@@ -715,11 +917,81 @@ const worldbookError = ref('');
 const isWorldbookLoading = ref(false);
 const lastMessageId = ref(0);
 
-const options = ref<RoleplayOption[]>([
-  { id: 'opt-001', title: '向柜台点单', content: '你走向柜台，礼貌地询问今日推荐饮品。' },
-  { id: 'opt-002', title: '观察店内', content: '你放慢脚步，观察店内客人与角色之间的互动细节。' },
-  { id: 'opt-003', title: '主动搭话', content: '你选择与当前出场角色展开一段自然交流。' },
-]);
+const isEditingMessageVisible = ref(false);
+
+const isWorldMinimized = ref(true);
+const isShopPopularityMinimized = ref(true);
+const shopPopularityPosition = ref({ x: 24, y: 96 });
+const isDraggingShopPopularity = ref(false);
+const dragOffset = ref({ x: 0, y: 0 });
+
+const options = ref<RoleplayOption[]>([{ id: 'opt-001', title: '看到我', content: '说明选项没出或者格式掉了。。' }]);
+
+// Parsed Content
+const extractedContext = ref('');
+const extractedVariables = ref('');
+
+/**
+ * HTML 转义函数 - 防止 XSS 攻击
+ */
+function escapeHtml(text: string): string {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+/**
+ * 简单的类 Markdown 渲染器（安全的 XSS 防护版本）
+ * 支持：**强调**、*斜体*、中英文引号
+ * 流程：先转义 HTML → 再应用 Markdown → 最终结果只有允许的标签
+ */
+function renderSimpleMarkdown(text: string): string {
+  // 第一步：转义所有 HTML 特殊字符（防止 XSS）
+  const escaped = escapeHtml(text);
+
+  // 第二步：应用 Markdown 转换（使用占位符避免冲突）
+  return (
+    escaped
+      // **强调** → <strong>强调</strong>
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      // *斜体* → <em>斜体</em>
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      // 美化中英文引号："text" → 「text」、'text' → 『text』
+      .replace(/"([^&]+)"/g, '「$1」')
+      .replace(/'([^&#]+)'/g, '『$1』')
+  );
+}
+
+function parseNarrativeMessage(message: string) {
+  // 提取 CONTEXT
+  const contextMatch = message.match(/<CONTEXT>([\s\S]*?)<\/CONTEXT>/i);
+  const rawContext = (contextMatch ? contextMatch[1] : message).trim();
+  // 应用类 Markdown 渲染
+  extractedContext.value = renderSimpleMarkdown(rawContext);
+
+  // 提取 OPTIONS
+  const optionsMatch = message.match(/<OPTIONS>([\s\S]*?)<\/OPTIONS>/i);
+  if (optionsMatch) {
+    const lines = optionsMatch[1]
+      .trim()
+      .split('\n')
+      .filter(l => l.trim());
+    options.value = lines.map((line, idx) => {
+      const parts = line.match(/^[([【](.+?)[)\]】]\s*(.+)/);
+      return {
+        id: `opt-dynamic-${idx + 1}`,
+        title: parts ? parts[1] : `行动 ${idx + 1}`,
+        content: parts ? parts[2] : line.trim(),
+      };
+    });
+  }
+
+  // 提取 UpdateVariable
+  const varMatch = message.match(/<UpdateVariable>([\s\S]*?)<\/UpdateVariable>/i);
+  extractedVariables.value = varMatch ? varMatch[1].trim() : '';
+
+  rawCurrentMessage.value = extractedContext.value;
+}
 
 const tabs: { key: FeatureTabKey; label: string }[] = [
   { key: 'history', label: '历史消息' },
@@ -742,17 +1014,11 @@ const pageRootStyle = computed(() => ({
   '--font-scale': fontScaleMap[settings.value.fontScale],
 }));
 
-const perspectiveEntries = computed(() => {
-  return perspectiveKeys.map(key => ({
-    key,
-    ...openingConfig.perspectives[key],
-  }));
-});
-
-const selectedOpeningPreview = computed(() => {
-  const key = selectedPerspective.value;
-  if (!key) return '请选择一个主视角后查看对应开场白。';
-  return openingConfig.perspectives[key].opening;
+const sortedOptions = computed(() => {
+  // 将自定义选项放在列表最后，动态选项保持原有顺序
+  const dynamic = options.value.filter(o => o.id.startsWith('opt-dynamic'));
+  const custom = options.value.filter(o => !o.id.startsWith('opt-dynamic'));
+  return [...dynamic, ...custom];
 });
 
 const historyFilteredMessages = computed(() => {
@@ -790,15 +1056,15 @@ const activeCharacterState = computed(() => {
   const vars = chatVariablesSnapshot.value;
 
   const mood =
-    _.get(vars, `${profile.name}.心情`) ??
-    _.get(vars, `角色状态.${profile.name}.心情`) ??
-    _.get(vars, `角色.${profile.name}.心情`) ??
+    _.get(vars, `${profile.name}.当前位置`) ??
+    _.get(vars, `角色状态.${profile.name}.当前位置`) ??
+    _.get(vars, `角色.${profile.name}.当前位置`) ??
     profile.mood;
 
   const location =
-    _.get(vars, `${profile.name}.位置`) ??
-    _.get(vars, `角色状态.${profile.name}.位置`) ??
-    _.get(vars, `角色.${profile.name}.位置`) ??
+    _.get(vars, `${profile.name}.当前位置`) ??
+    _.get(vars, `角色状态.${profile.name}.当前位置`) ??
+    _.get(vars, `角色.${profile.name}.当前位置`) ??
     profile.location;
 
   const outfit =
@@ -807,17 +1073,58 @@ const activeCharacterState = computed(() => {
     _.get(vars, `角色.${profile.name}.着装`) ??
     profile.outfit;
 
-  const relation =
-    _.get(vars, `${profile.name}.关系`) ??
-    _.get(vars, `角色状态.${profile.name}.关系`) ??
-    _.get(vars, `角色.${profile.name}.关系`) ??
-    profile.relation;
+  const keyItemsSource =
+    _.get(vars, `${profile.name}.关键物品`) ??
+    _.get(vars, `角色状态.${profile.name}.关键物品`) ??
+    _.get(vars, `角色.${profile.name}.关键物品`) ??
+    profile.keyItems;
+
+  let keyItemsText: string;
+  if (typeof keyItemsSource === 'string' || keyItemsSource == null) {
+    keyItemsText = keyItemsSource || profile.keyItems || '暂无特别标记的物品';
+  } else {
+    const entries = Object.entries(keyItemsSource as Record<string, { 描述?: string; 数量?: number }>);
+    keyItemsText =
+      entries
+        .map(([name, info]) => {
+          const count = info?.数量;
+          if (count != null && count !== 1) return `${name}×${count}`;
+          return name;
+        })
+        .join('、') || '暂无特别标记的物品';
+  }
 
   return {
     当前心情: String(mood),
     所在位置: String(location),
     当前着装: String(outfit),
-    关系状态: String(relation),
+    当前关键物品: keyItemsText,
+  };
+});
+
+const shopPopularity = computed(() => {
+  const raw = store.data.店铺人气 ?? {};
+  return {
+    rabbitHouse: Number(raw['Rabbit House'] ?? 0),
+    甘兔庵: Number(raw.甘兔庵 ?? 0),
+    fleur: Number(raw['Fleur de Lapin'] ?? 0),
+    brightBunny: Number(raw['Bright Bunny'] ?? 0),
+  };
+});
+
+const worldInfo = computed(() => {
+  const raw = store.data.世界 ?? {};
+  const recentEvents = raw.近期事务 ?? {};
+  const eventsArray = Object.entries(recentEvents).map(([name, desc]) => ({
+    name,
+    desc: String(desc),
+  }));
+  return {
+    time: String(raw.当前时间 ?? '--'),
+    location: String(raw.当前地点 ?? '--'),
+    season: String(raw.当前季节 ?? '--'),
+    weather: String(raw.当前天气 ?? '--'),
+    recentEvents: eventsArray,
   };
 });
 
@@ -829,6 +1136,13 @@ function clearTypewriterTimer(): void {
   if (typewriterTimer === null) return;
   window.clearInterval(typewriterTimer);
   typewriterTimer = null;
+}
+
+/**
+ * 从 HTML 中提取纯文本（用于打字机效果）
+ */
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, '');
 }
 
 function applyDisplayMessage(text: string): void {
@@ -844,7 +1158,9 @@ function applyDisplayMessage(text: string): void {
     return;
   }
 
-  const chars = Array.from(text);
+  // 打字机模式：先显示纯文本，完成后应用 HTML
+  const plainText = stripHtml(text);
+  const chars = Array.from(plainText);
   displayedMessage.value = '';
   let index = 0;
 
@@ -854,6 +1170,8 @@ function applyDisplayMessage(text: string): void {
       displayedMessage.value = chars.slice(0, index).join('');
       if (index >= chars.length) {
         clearTypewriterTimer();
+        // 打字机效果完成后，应用完整的 HTML 渲染
+        displayedMessage.value = text;
       }
     },
     settings.value.reduceMotion ? 8 : 20,
@@ -876,61 +1194,10 @@ function toggleDisplayMode(): void {
   settings.value.displayMode = chain[(index + 1) % chain.length];
 }
 
-function readPerspectiveFromChatVariables(): PerspectiveKey | null {
-  try {
-    const vars = getVariables({ type: 'chat' });
-    const value = _.get(vars, PERSPECTIVE_VAR_PATH);
-    return isPerspectiveKey(value) ? value : null;
-  } catch {
-    return null;
-  }
-}
-
 function syncLastMessageId(): number {
   const value = getLastMessageId();
   lastMessageId.value = value;
   return value;
-}
-
-function persistPerspectiveToChatVariables(value: PerspectiveKey): void {
-  try {
-    updateVariablesWith(
-      vars => {
-        _.set(vars, PERSPECTIVE_VAR_PATH, value);
-        return vars;
-      },
-      { type: 'chat' },
-    );
-  } catch (error) {
-    console.warn('保存主视角到聊天变量失败:', error);
-  }
-}
-
-function shouldShowPerspectiveModal(): boolean {
-  return syncLastMessageId() === 0;
-}
-
-function getPerspectiveOpening(): string {
-  const key = selectedPerspective.value ?? '无';
-  return openingConfig.perspectives[key].opening;
-}
-
-function confirmPerspective(): void {
-  if (!selectedPerspective.value) return;
-
-  perspectiveConfirmed.value = true;
-  showPerspectiveSelector.value = false;
-  persistPerspectiveToChatVariables(selectedPerspective.value);
-
-  const mapped = perspectiveToCharacter[selectedPerspective.value];
-  if (mapped) activeCharacterKey.value = mapped;
-
-  if (syncLastMessageId() === 0) {
-    rawCurrentMessage.value = getPerspectiveOpening();
-    updateOptionsFromMessage(rawCurrentMessage.value);
-  }
-
-  toastr.success(`主视角已确定：${selectedPerspective.value}`);
 }
 
 function loadHistory(reset = false): void {
@@ -1000,6 +1267,10 @@ async function loadWorldbookEntries(): Promise<void> {
   }
 }
 
+function viewWorldbookDetail(entry: WorldbookEntry): void {
+  selectedEntry.value = entry;
+}
+
 async function reloadWorldbook(): Promise<void> {
   await loadWorldbookNames();
   await loadWorldbookEntries();
@@ -1044,8 +1315,10 @@ function refreshLatestAssistantMessage(): void {
   const latest = list.at(-1);
 
   if (!latest || typeof latest.message !== 'string') return;
-  rawCurrentMessage.value = latest.message;
-  updateOptionsFromMessage(latest.message);
+
+  lastMessageRaw.value = latest;
+  parseNarrativeMessage(latest.message);
+  scrollStoryIfNeeded();
 }
 
 function scrollStoryIfNeeded(): void {
@@ -1061,28 +1334,15 @@ async function handleOption(content: string): Promise<void> {
     return;
   }
 
-  if (showPerspectiveSelector.value || !perspectiveConfirmed.value) {
-    toastr.warning('请先完成主视角选择。');
-    return;
-  }
-
   if (isBusyGenerating.value) return;
   isBusyGenerating.value = true;
 
   try {
-    const isFirstTurn = syncLastMessageId() === 0;
     await createChatMessages([{ role: 'user', message: clean }]);
 
     const result = await generate({
       user_input: clean,
       should_stream: false,
-      overrides: isFirstTurn
-        ? {
-            chat_history: {
-              prompts: [{ role: 'assistant', content: getPerspectiveOpening() }],
-            },
-          }
-        : undefined,
     });
 
     const latest = getChatMessages(-1)[0] as ChatMessage | undefined;
@@ -1112,13 +1372,57 @@ async function submitCustomOption(): Promise<void> {
     return;
   }
 
-  options.value.unshift({
-    id: `opt-custom-${Date.now()}`,
-    title: '自定义行动',
-    content: value,
-  });
+  options.value.push({ id: `opt-custom-${Date.now()}`, title: '自定义行动', content: value });
   customOption.value = '';
   await handleOption(value);
+}
+
+async function handleSwipe(): Promise<void> {
+  if (isBusyGenerating.value) return;
+  isBusyGenerating.value = true;
+  try {
+    // 调用酒馆 generate 接口，传入 swipe 动作
+    const result = await SillyTavern.generate({ action: 'swipe' });
+    rawCurrentMessage.value = result;
+    refreshLatestAssistantMessage();
+    toastr.success('已重新生成回复。');
+  } catch (error) {
+    toastr.error('重生成失败。');
+    console.error(error);
+  } finally {
+    isBusyGenerating.value = false;
+  }
+}
+
+function openEditLastMessage(): void {
+  const lastId = syncLastMessageId();
+  const msg = getChatMessages(lastId)[0] as ChatMessage | undefined;
+  if (!msg) return;
+
+  editingMessageText.value = msg.message;
+  isEditingMessageVisible.value = true;
+}
+
+function cancelEdit(): void {
+  isEditingMessageVisible.value = false;
+}
+
+async function saveEditedMessage(): Promise<void> {
+  const lastId = syncLastMessageId();
+  if (!editingMessageText.value.trim()) return;
+
+  try {
+    // 使用酒馆 API 更新消息内容
+    setChatMessages([{ message_id: lastId, message: editingMessageText.value.trim() }]);
+
+    isEditingMessageVisible.value = false;
+    refreshLatestAssistantMessage();
+    loadHistory(false);
+    toastr.success('消息已修改。');
+  } catch (error) {
+    toastr.error('修改保存失败。');
+    console.error(error);
+  }
 }
 
 async function toggleFullscreen(): Promise<void> {
@@ -1161,23 +1465,46 @@ function openCharacterDetail(characterKey: string): void {
 
 function onGlobalKeydown(event: KeyboardEvent): void {
   if (event.key !== 'Escape') return;
-  if (showPerspectiveSelector.value) return;
+  if (isEditingMessageVisible.value) {
+    cancelEdit();
+    return;
+  }
   if (isFeatureModalVisible.value) {
     closeFeatureModal();
   }
 }
 
+function toggleWorldMinimized(): void {
+  isWorldMinimized.value = !isWorldMinimized.value;
+}
+
+function toggleShopPopularityMinimized(): void {
+  isShopPopularityMinimized.value = !isShopPopularityMinimized.value;
+}
+
+function onShopPopularityDragStart(event: MouseEvent | TouchEvent): void {
+  isDraggingShopPopularity.value = true;
+  const point = 'touches' in event ? event.touches[0] : event;
+  dragOffset.value = {
+    x: point.clientX - shopPopularityPosition.value.x,
+    y: point.clientY - shopPopularityPosition.value.y,
+  };
+}
+
+function onShopPopularityDragMove(event: MouseEvent | TouchEvent): void {
+  if (!isDraggingShopPopularity.value) return;
+  const point = 'touches' in event ? event.touches[0] : event;
+  const x = point.clientX - dragOffset.value.x;
+  const y = point.clientY - dragOffset.value.y;
+  shopPopularityPosition.value = { x, y };
+}
+
+function onShopPopularityDragEnd(): void {
+  isDraggingShopPopularity.value = false;
+}
+
 async function initializeForCurrentChat(): Promise<void> {
   syncLastMessageId();
-  const cachedPerspective = readPerspectiveFromChatVariables();
-  showPerspectiveSelector.value = shouldShowPerspectiveModal() && !cachedPerspective;
-  selectedPerspective.value = showPerspectiveSelector.value ? cachedPerspective : (cachedPerspective ?? '无');
-  perspectiveConfirmed.value = !showPerspectiveSelector.value;
-
-  if (!showPerspectiveSelector.value && selectedPerspective.value) {
-    activeCharacterKey.value = perspectiveToCharacter[selectedPerspective.value];
-  }
-
   refreshLatestAssistantMessage();
   loadHistory(true);
   refreshChatVariablesSnapshot();
@@ -1222,8 +1549,12 @@ watch(selectedWorldbookName, () => {
 
 onMounted(() => {
   document.title = '点兔文字交互界面';
-  upsertMetaDescription('高沉浸文字互动体验，支持选项驱动叙事、世界书联动与主视角开场注入。');
+  upsertMetaDescription('高沉浸文字互动体验，支持选项驱动叙事与世界书联动。');
   document.addEventListener('keydown', onGlobalKeydown);
+  window.addEventListener('mousemove', onShopPopularityDragMove);
+  window.addEventListener('mouseup', onShopPopularityDragEnd);
+  window.addEventListener('touchmove', onShopPopularityDragMove);
+  window.addEventListener('touchend', onShopPopularityDragEnd);
 
   void initializeForCurrentChat();
 
@@ -1269,5 +1600,9 @@ onBeforeUnmount(() => {
   clearTypewriterTimer();
   document.removeEventListener('keydown', onGlobalKeydown);
   eventStops.forEach(stop => stop());
+  window.removeEventListener('mousemove', onShopPopularityDragMove);
+  window.removeEventListener('mouseup', onShopPopularityDragEnd);
+  window.removeEventListener('touchmove', onShopPopularityDragMove);
+  window.removeEventListener('touchend', onShopPopularityDragEnd);
 });
 </script>
