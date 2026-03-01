@@ -956,21 +956,22 @@ function renderSimpleMarkdown(text: string): string {
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       // *斜体* → <em>斜体</em>
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      // 美化中英文引号："text" → 「text」、'text' → 『text』
-      .replace(/"([^&]+)"/g, '「$1」')
-      .replace(/'([^&#]+)'/g, '『$1』')
+    // 美化中英文引号："text" → 「text」、'text' → 『text』
+    //.replace(/"([^&]+)"/g, '「$1」')
+    //.replace(/'([^&#]+)'/g, '『$1』')
   );
 }
 
 function parseNarrativeMessage(message: string) {
   // 提取 CONTEXT
-  const contextMatch = message.match(/<CONTEXT>([\s\S]*?)<\/CONTEXT>/i);
-  const rawContext = (contextMatch ? contextMatch[1] : message).trim();
+  const contextMatch = message.match(/<CONTEXT>([\s\S]*?)<\/CONTEXT>/);
+  const contextMatchContent = message.match(/<content>([\s\S]*?)<\/content>/);
+  const rawContext = (contextMatch ? contextMatch[1] : contextMatchContent ? contextMatchContent[1] : message).trim();
   // 应用类 Markdown 渲染
   extractedContext.value = renderSimpleMarkdown(rawContext);
 
   // 提取 OPTIONS
-  const optionsMatch = message.match(/<OPTIONS>([\s\S]*?)<\/OPTIONS>/i);
+  const optionsMatch = message.match(/<OPTIONS>([\s\S]*?)<\/OPTIONS>/);
   if (optionsMatch) {
     const lines = optionsMatch[1]
       .trim()
