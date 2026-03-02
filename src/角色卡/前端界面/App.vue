@@ -60,7 +60,7 @@
 
         <!-- Version Info -->
         <div class="version-info animate-fadeInUp">
-          <span>Version 1.0.1</span>
+          <span>Version 1.1.0</span>
         </div>
       </section>
     </transition>
