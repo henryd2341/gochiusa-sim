@@ -57,6 +57,11 @@
         <button class="press-start-btn animate-fadeInUp" @click="handleStart">
           <span class="animate-pulse">PRESS START</span>
         </button>
+
+        <!-- Version Info -->
+        <div class="version-info animate-fadeInUp">
+          <span>Version 1.1.0</span>
+        </div>
       </section>
     </transition>
 
@@ -609,8 +614,8 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Schema } from '../schema';
 import titleBrownLogo from './assets/icons/title_brown.svg?url';
 
-const useDataStore = defineMvuDataStore(Schema, { type: 'message', message_id: getCurrentMessageId() });
-const store = useDataStore();
+let useDataStore = defineMvuDataStore(Schema, { type: 'message', message_id: getCurrentMessageId() });
+let store = useDataStore();
 const editingMessageText = ref('');
 const lastMessageRaw = ref<ChatMessage | null>(null);
 
@@ -659,170 +664,131 @@ function catboxImage(code: string): string {
   return `https://files.catbox.moe/${code}.png`;
 }
 
-const characterProfiles: CharacterProfile[] = [
+// 角色静态信息（不随数据变化）
+const characterStaticInfo = [
   {
     key: 'cocoa',
     name: '保登心爱',
     color: 'var(--clr-cocoa)',
-    avatarUrl: catboxImage('qjltca'),
+    avatarCode: 'qjltca',
     summary: 'Rabbit House寄宿店员。喜欢毛茸茸的东西。把智乃视为妹妹一样的存在。名字源自于热可可（Hot Cocoa）。',
-    mood: store.data.保登心爱.心情状态,
-    location: store.data.保登心爱.当前位置,
-    outfit: store.data.保登心爱.着装,
-    keyItems: store.data.保登心爱.关键物品,
   },
   {
     key: 'chino',
     name: '香风智乃',
     color: 'var(--clr-chino)',
-    avatarUrl: catboxImage('6t09pw'),
+    avatarCode: '6t09pw',
     summary:
       'Rabbit House家的独生女。性格冷淡的无口系少女，独立能力强但不擅长与人相处。在咖啡方面有着渊博的知识。名字源自于卡布奇诺。',
-    mood: store.data.香风智乃.心情状态,
-    location: store.data.香风智乃.当前位置,
-    outfit: store.data.香风智乃.着装,
-    keyItems: store.data.香风智乃.关键物品,
   },
   {
     key: 'rize',
     name: '天天座理世',
     color: 'var(--clr-rize)',
-    avatarUrl: catboxImage('n9szhx'),
+    avatarCode: 'n9szhx',
     summary:
       '在Rabbit House打工的店员。平时是个会携带武器的、浑身散发着军人气质的强力角色，内心里却也有着少女的一面。名字源自于法国熏香加味绿茶夏日香气（Thé Des Alizés）。',
-    mood: `${store.data.天天座理世.心情状态}`,
-    location: `${store.data.天天座理世.当前位置}`,
-    outfit: `${store.data.天天座理世.着装}`,
-    keyItems: store.data.天天座理世.关键物品,
   },
   {
     key: 'chiya',
     name: '宇治松千夜',
     color: 'var(--clr-chiya)',
-    avatarUrl: catboxImage('v4spnt'),
+    avatarCode: 'v4spnt',
     summary:
       '和风甜品店甘兔庵的看板娘。有着大和抚子的相貌和气质。兴趣是为菜品起各种各样古怪的名字。名字源自于宇治抹茶。',
-    mood: `${store.data.宇治松千夜.心情状态}`,
-    location: `${store.data.宇治松千夜.当前位置}`,
-    outfit: `${store.data.宇治松千夜.着装}`,
-    keyItems: store.data.宇治松千夜.关键物品,
   },
   {
     key: 'syaro',
     name: '桐间纱路',
     color: 'var(--clr-syaro)',
-    avatarUrl: catboxImage('b982xz'),
+    avatarCode: 'b982xz',
     summary:
       '在Fleur du Lapin打工的店员，千夜的发小。有着贵族大小姐一般的气质，却过着简朴的生活。也有着害怕兔子以及容易醉咖啡的一面。名字源自于乞力马扎罗咖啡（Kilimanjaro）。',
-    mood: `${store.data.桐间纱路.心情状态}`,
-    location: `${store.data.桐间纱路.当前位置}`,
-    outfit: `${store.data.桐间纱路.着装}`,
-    keyItems: store.data.桐间纱路.关键物品,
   },
   {
     key: 'maya',
     name: '条河麻耶',
     color: 'var(--clr-maya)',
-    avatarUrl: catboxImage('bmw44n'),
+    avatarCode: 'bmw44n',
     summary: '活泼元气，个性爽朗，大大咧咧的高一新生，善于带动团队气氛。名字源自于产自玉玛雅的大吉岭红茶。',
-    mood: `${store.data.条河麻耶.心情状态}`,
-    location: `${store.data.条河麻耶.当前位置}`,
-    outfit: `${store.data.条河麻耶.着装}`,
-    keyItems: store.data.条河麻耶.关键物品,
   },
   {
     key: 'megu',
     name: '奈津惠',
     color: 'var(--clr-megu)',
-    avatarUrl: catboxImage('koovsy'),
+    avatarCode: 'koovsy',
     summary: '个性温和，有点天然呆的高一新生，情绪变化细腻。名字源自于肉豆蔻（Nutmeg）。',
-    mood: `${store.data.奈津惠.心情状态}`,
-    location: `${store.data.奈津惠.当前位置}`,
-    outfit: `${store.data.奈津惠.着装}`,
-    keyItems: store.data.奈津惠.关键物品,
   },
   {
     key: 'fuyu',
     name: '风衣叶冬优',
     color: 'var(--clr-fuyu)',
-    avatarUrl: catboxImage('lckv74'),
+    avatarCode: 'lckv74',
     summary:
       '寄宿在Bright Bunny的高一新生，升入高中以前在大都市生活，与城市中的猫咪们作伴。擅长国际象棋和腹语术。名字源自于短舌匹菊（Feverfew）。',
-    mood: `${store.data.风衣叶冬优.心情状态}`,
-    location: `${store.data.风衣叶冬优.当前位置}`,
-    outfit: `${store.data.风衣叶冬优.着装}`,
-    keyItems: store.data.风衣叶冬优.关键物品,
   },
   {
     key: 'natsume',
     name: '神沙夏明',
     color: 'var(--clr-natsume)',
-    avatarUrl: catboxImage('usclrp'),
+    avatarCode: 'usclrp',
     summary: 'Bright Bunny社长家的千金，是双胞胎中的妹妹，性格傲娇。名字源自于红枣姜茶。',
-    mood: `${store.data.神沙夏明.心情状态}`,
-    location: `${store.data.神沙夏明.当前位置}`,
-    outfit: `${store.data.神沙夏明.着装}`,
-    keyItems: store.data.神沙夏明.关键物品,
   },
   {
     key: 'eru',
     name: '神沙映月',
     color: 'var(--clr-eru)',
-    avatarUrl: catboxImage('r10sh1'),
+    avatarCode: 'r10sh1',
     summary: 'Bright Bunny社长家的千金，是双胞胎中的姐姐，性格比较天然呆和脱线。名字源自于姜汁汽水（Ginger Ale）。',
-    mood: `${store.data.神沙映月.心情状态}`,
-    location: `${store.data.神沙映月.当前位置}`,
-    outfit: `${store.data.神沙映月.着装}`,
-    keyItems: store.data.神沙映月.关键物品,
   },
   {
     key: 'yura',
     name: '狩手结良',
     color: 'var(--clr-yura)',
-    avatarUrl: catboxImage('a3uv0i'),
+    avatarCode: 'a3uv0i',
     summary:
       '理世在高中和大学时的同学，高中时担任吹箭部长，上大学后在理世家兼职女仆。由于两人父亲之间的关系，也是理世的发小。名字源自于金盏花茶（Calendula）。',
-    mood: `${store.data.狩手结良.心情状态}`,
-    location: `${store.data.狩手结良.当前位置}`,
-    outfit: `${store.data.狩手结良.着装}`,
-    keyItems: store.data.狩手结良.关键物品,
   },
   {
     key: 'aoyama',
     name: '青山蓝山',
     color: 'var(--clr-aoyama)',
-    avatarUrl: catboxImage('x18i00'),
+    avatarCode: 'x18i00',
     summary: '散发着宁和气质的小说家。学生时代时曾在小说创作方面得到智乃的爷爷的关照和建议。名字源自于蓝山咖啡。',
-    mood: `${store.data.青山蓝山.心情状态}`,
-    location: `${store.data.青山蓝山.当前位置}`,
-    outfit: `${store.data.青山蓝山.着装}`,
-    keyItems: store.data.青山蓝山.关键物品,
   },
   {
     key: 'mate',
     name: '真手凛',
     color: 'var(--clr-mate)',
-    avatarUrl: catboxImage('kk59ir'),
+    avatarCode: 'kk59ir',
     summary:
       '青山小姐的责任编辑，也是青山小姐高中时期的后辈，自学生时代起就会为了敦促四处游走的青山小姐好好工作而到处寻找她。名字源自于曼特宁咖啡。',
-    mood: `${store.data.真手凛.心情状态}`,
-    location: `${store.data.真手凛.当前位置}`,
-    outfit: `${store.data.真手凛.着装}`,
-    keyItems: store.data.真手凛.关键物品,
   },
   {
     key: 'mocha',
     name: '保登摩卡',
     color: 'var(--clr-mocha)',
-    avatarUrl: catboxImage('hi872c'),
+    avatarCode: 'hi872c',
     summary:
       '心爱的姐姐，也是家中的大姐，是兄弟姐妹中年龄最小的心爱所依靠和憧憬的对象。平时散发着可靠的姐姐气场，但也有着天然的一面。在老家的保登面包房中工作，擅长做松松软软的面包。名字源自于摩卡咖啡。',
-    mood: `${store.data.保登摩卡.心情状态}`,
-    location: `${store.data.保登摩卡.当前位置}`,
-    outfit: `${store.data.保登摩卡.着装}`,
-    keyItems: store.data.保登摩卡.关键物品,
   },
-];
+] as const;
+
+// 动态角色资料（计算属性，响应 store 数据变化）
+const characterProfiles = computed<CharacterProfile[]>(() => {
+  const data = store.data;
+  return characterStaticInfo.map(info => ({
+    key: info.key,
+    name: info.name,
+    color: info.color,
+    avatarUrl: catboxImage(info.avatarCode),
+    summary: info.summary,
+    mood: data[info.name]?.心情状态 ?? '',
+    location: data[info.name]?.当前位置 ?? '',
+    outfit: data[info.name]?.着装 ?? '',
+    keyItems: data[info.name]?.关键物品 ?? {},
+  }));
+});
 
 function loadSettings(): UISettings {
   try {
@@ -962,16 +928,44 @@ function renderSimpleMarkdown(text: string): string {
   );
 }
 
+/**
+ * 预处理思维链标签，移除 </think> 或 </thinking> 之前的所有内容
+ */
+function preprocessThinkTags(message: string): string {
+  // 匹配 </think> 或 </thinking> 闭合标签
+  const closeTagPattern = /<\/think.*>/i;
+  const closeMatch = message.match(closeTagPattern);
+
+  if (closeMatch) {
+    // 找到闭合标签的位置，返回该标签之后的内容
+    const endIndex = closeMatch.index! + closeMatch[0].length;
+    return message.slice(endIndex);
+  }
+
+  // 如果没有找到闭合标签，检查是否有未闭合的 <think> 或 <thinking> 标签
+  const openTagPattern = /<(think|thinking)>/i;
+  const openMatch = message.match(openTagPattern);
+
+  if (openMatch) {
+    // 找到开始标签的位置，返回该标签之前的内容
+    return message.slice(0, openMatch.index);
+  }
+
+  return message;
+}
+
 function parseNarrativeMessage(message: string) {
+  // 预处理思维链标签
+  const cleanedMessage = preprocessThinkTags(message);
+
   // 提取 CONTEXT
-  const contextMatch = message.match(/<CONTEXT>([\s\S]*?)<\/CONTEXT>/);
-  const contextMatchContent = message.match(/<content>([\s\S]*?)<\/content>/);
-  const rawContext = (contextMatch ? contextMatch[1] : contextMatchContent ? contextMatchContent[1] : message).trim();
+  const contextMatch = cleanedMessage.match(/<(CONTEXT|content)>([\s\S]*?)<\/(CONTEXT|content)>/);
+  const rawContext = (contextMatch ? contextMatch[2] : cleanedMessage).trim();
   // 应用类 Markdown 渲染
   extractedContext.value = renderSimpleMarkdown(rawContext);
 
   // 提取 OPTIONS
-  const optionsMatch = message.match(/<OPTIONS>([\s\S]*?)<\/OPTIONS>/);
+  const optionsMatch = cleanedMessage.match(/<OPTIONS>([\s\S]*?)<\/OPTIONS>/);
   if (optionsMatch) {
     const lines = optionsMatch[1]
       .trim()
@@ -988,7 +982,7 @@ function parseNarrativeMessage(message: string) {
   }
 
   // 提取 UpdateVariable
-  const varMatch = message.match(/<UpdateVariable>([\s\S]*?)<\/UpdateVariable>/i);
+  const varMatch = cleanedMessage.match(/<UpdateVariable>([\s\S]*?)<\/UpdateVariable>/i);
   extractedVariables.value = varMatch ? varMatch[1].trim() : '';
 
   rawCurrentMessage.value = extractedContext.value;
@@ -1048,8 +1042,8 @@ const filteredWorldbookEntries = computed(() => {
 });
 
 const activeCharacter = computed(() => {
-  const match = characterProfiles.find(item => item.key === activeCharacterKey.value);
-  return match ?? characterProfiles[0];
+  const match = characterProfiles.value.find(item => item.key === activeCharacterKey.value);
+  return match ?? characterProfiles.value[0];
 });
 
 const activeCharacterState = computed(() => {
@@ -1293,9 +1287,15 @@ async function toggleWorldbookEntryState(uid: number, enabled: boolean): Promise
   }
 }
 
+function refreshDataStore(): void {
+  useDataStore = defineMvuDataStore(Schema, { type: 'message', message_id: syncLastMessageId() });
+  store = useDataStore();
+}
+
 function refreshChatVariablesSnapshot(): void {
   try {
     chatVariablesSnapshot.value = getVariables({ type: 'chat' });
+    refreshDataStore();
   } catch {
     chatVariablesSnapshot.value = {};
   }
@@ -1382,8 +1382,12 @@ async function handleSwipe(): Promise<void> {
   if (isBusyGenerating.value) return;
   isBusyGenerating.value = true;
   try {
-    // 调用酒馆 generate 接口，传入 swipe 动作
-    const result = await SillyTavern.generate({ action: 'swipe' });
+    // 获取最后一条消息 ID
+    const lastId = syncLastMessageId();
+
+    // 调用 generate 重新生成回复
+    const result = SillyTavern.generate('regenerate');
+
     rawCurrentMessage.value = result;
     refreshLatestAssistantMessage();
     toastr.success('已重新生成回复。');
@@ -1413,12 +1417,23 @@ async function saveEditedMessage(): Promise<void> {
   if (!editingMessageText.value.trim()) return;
 
   try {
-    // 使用酒馆 API 更新消息内容
-    setChatMessages([{ message_id: lastId, message: editingMessageText.value.trim() }]);
+    // 使用酒馆 API 更新消息内容，设置 refresh: 'none' 避免 iframe 重新渲染
+    await setChatMessages([{ message_id: lastId, message: editingMessageText.value.trim() }], { refresh: 'none' });
 
+    // 手动更新界面状态（类似 refreshLatestAssistantMessage 的做法，不触发 iframe 重新渲染）
     isEditingMessageVisible.value = false;
-    refreshLatestAssistantMessage();
+
+    // 获取更新后的消息并解析
+    const updatedMsg = getChatMessages(lastId)[0] as ChatMessage | undefined;
+    if (updatedMsg && typeof updatedMsg.message === 'string') {
+      lastMessageRaw.value = updatedMsg;
+      parseNarrativeMessage(updatedMsg.message);
+      scrollStoryIfNeeded();
+    }
+
+    // 刷新历史记录
     loadHistory(false);
+
     toastr.success('消息已修改。');
   } catch (error) {
     toastr.error('修改保存失败。');
