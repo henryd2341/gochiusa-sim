@@ -213,6 +213,15 @@ body {
   box-shadow: 0 0 20px rgba(212, 165, 116, 0.4);
 }
 
+.version-info {
+  font-family: 'Noto Sans SC', monospace;
+  font-size: var(--text-sm);
+  color: var(--accent-gold);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 /* Main Layout */
 #page-game-root {
   width: 100%;
