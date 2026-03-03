@@ -982,10 +982,10 @@ function parseNarrativeMessage(message: string) {
   }
 
   // 提取 UpdateVariable
-  const varMatch = cleanedMessage.match(/<UpdateVariable>([\s\S]*?)<\/UpdateVariable>/i);
-  extractedVariables.value = varMatch ? varMatch[1].trim() : '';
+  // const varMatch = cleanedMessage.match(/<UpdateVariable>([\s\S]*?)<\/UpdateVariable>/i);
+  // extractedVariables.value = varMatch ? varMatch[1].trim() : '';
 
-  rawCurrentMessage.value = extractedContext.value;
+  // rawCurrentMessage.value = extractedContext.value;
 }
 
 const tabs: { key: FeatureTabKey; label: string }[] = [
