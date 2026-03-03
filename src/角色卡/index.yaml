@@ -1,8 +1,8 @@
 # yaml-language-server: $schema=https://testingcf.jsdelivr.net/gh/StageDog/tavern_sync/dist/schema/character.zh.json
 头像: 头像
-版本: ""
-作者: ""
-备注: ""
+版本: "1.0"
+作者: "Discord: @TripleMintIceCream"
+备注: 本卡仅发布于类脑，禁止无授权二传。
 
 第一条消息:
   - 文件: 第一条消息\0
@@ -13,7 +13,7 @@
 
 锚点: {}
 
-世界书名称: 请问您今天要来点兔子吗 v1.0-RELEASE
+世界书名称: 请问您今天要来点兔子吗 v1.1-RELEASE
 条目:
   - 名称: AI回复格式
     启用: true
@@ -39,8 +39,8 @@
       顺序: 0
     激活概率: 100
     递归:
-      不可被其他条目激活: false
-      不可激活其他条目: false
+      不可被其他条目激活: true
+      不可激活其他条目: true
     文件: 世界书\[InitVar]_请勿开启
 
   - 名称: 当前变量
