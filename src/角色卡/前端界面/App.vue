@@ -60,7 +60,7 @@
 
         <!-- Version Info -->
         <div class="version-info animate-fadeInUp">
-          <span>Version 1.1.0</span>
+          <span>Version 1.2.0</span>
         </div>
       </section>
     </transition>
@@ -638,6 +638,10 @@ type UISettings = {
   reduceMotion: boolean;
 };
 
+type ChatUiState = {
+  hasStarted: boolean;
+};
+
 type CharacterProfile = {
   key: string;
   name: string;
@@ -659,6 +663,11 @@ const defaultSettings: UISettings = {
 };
 
 const SETTINGS_STORAGE_KEY = 'gochiusa.frontend.settings.v2';
+const CHAT_UI_STORAGE_KEY = 'gochiusa.frontend.chat-ui.v1';
+const EMPTY_NARRATIVE_TEXT = '正在等待剧情推进，请选择下一步行动。';
+const FALLBACK_OPTIONS: RoleplayOption[] = [
+  { id: 'opt-001', title: '看到我', content: '说明选项没出或者格式掉了。。' },
+];
 
 function catboxImage(code: string): string {
   return `https://files.catbox.moe/${code}.png`;
@@ -808,6 +817,48 @@ function loadSettings(): UISettings {
   }
 }
 
+function getCurrentChatStorageId(): string {
+  try {
+    return SillyTavern.getCurrentChatId() || 'unknown-chat';
+  } catch {
+    return 'unknown-chat';
+  }
+}
+
+function loadChatUiStateMap(): Record<string, ChatUiState> {
+  try {
+    const raw = localStorage.getItem(CHAT_UI_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, ChatUiState>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function loadCurrentChatUiState(): ChatUiState {
+  const state = loadChatUiStateMap()[getCurrentChatStorageId()];
+  return {
+    hasStarted: state?.hasStarted === true,
+  };
+}
+
+function saveCurrentChatUiState(patch: Partial<ChatUiState>): void {
+  try {
+    const chatId = getCurrentChatStorageId();
+    const allState = loadChatUiStateMap();
+    allState[chatId] = {
+      ...loadCurrentChatUiState(),
+      ...patch,
+    };
+    localStorage.setItem(CHAT_UI_STORAGE_KEY, JSON.stringify(allState));
+  } catch {
+    // localStorage 不可用时静默退化
+  }
+}
+
+function hydrateUiStateForCurrentChat(): void {
+  isSplashScreenVisible.value = !loadCurrentChatUiState().hasStarted;
+}
+
 function upsertMetaDescription(content: string): void {
   const selector = 'meta[name="description"]';
   let meta = document.head.querySelector<HTMLMetaElement>(selector);
@@ -845,28 +896,22 @@ function onAvatarImageError(event: Event, characterName: string): void {
 }
 
 function extractRoleplayOptions(message: string): RoleplayOption[] {
-  const block = message.match(/<OPTIONS>([\s\S]*?)<\/OPTIONS>/i)?.[1] ?? '';
-  if (!block.trim()) return [];
-
-  return [...block.matchAll(/(.+?)[:：]\s*(.+)/g)].map((match, index) => ({
-    id: `opt-dynamic-${index + 1}`,
-    title: match[1].trim(),
-    content: match[2].trim(),
-  }));
+  const block = extractTaggedContent(message, ['options']);
+  return parseOptionsBlock(block);
 }
 
 const settings = ref<UISettings>(loadSettings());
 
 const isFeatureModalVisible = ref(false);
 const activeTab = ref<FeatureTabKey>('history');
-const isSplashScreenVisible = ref(true);
+const isSplashScreenVisible = ref(!loadCurrentChatUiState().hasStarted);
 const customOption = ref('');
 const isFullscreen = ref(false);
 const isBusyGenerating = ref(false);
 const selectedEntry = ref<WorldbookEntry | null>(null);
 
-const rawCurrentMessage = ref('正在等待剧情推进，请选择下一步行动。');
-const displayedMessage = ref('正在等待剧情推进，请选择下一步行动。');
+const rawCurrentMessage = ref(EMPTY_NARRATIVE_TEXT);
+const displayedMessage = ref(EMPTY_NARRATIVE_TEXT);
 
 const activeCharacterKey = ref<string>('cocoa');
 const chatVariablesSnapshot = ref<Record<string, any>>({});
@@ -891,7 +936,7 @@ const shopPopularityPosition = ref({ x: 24, y: 96 });
 const isDraggingShopPopularity = ref(false);
 const dragOffset = ref({ x: 0, y: 0 });
 
-const options = ref<RoleplayOption[]>([{ id: 'opt-001', title: '看到我', content: '说明选项没出或者格式掉了。。' }]);
+const options = ref<RoleplayOption[]>([...FALLBACK_OPTIONS]);
 
 // Parsed Content
 const extractedContext = ref('');
@@ -954,38 +999,94 @@ function preprocessThinkTags(message: string): string {
   return message;
 }
 
+function extractTaggedContent(message: string, tagNames: string[]): string {
+  const normalizedMessage = message.replace(/\r\n?/g, '\n');
+  const tagPattern = tagNames.join('|');
+  const pairedPattern = new RegExp(`<\\s*(?:${tagPattern})\\s*>([\\s\\S]*?)<\\/\\s*(?:${tagPattern})\\s*>`, 'i');
+  const pairedMatch = normalizedMessage.match(pairedPattern);
+  if (pairedMatch?.[1]) {
+    return pairedMatch[1].trim();
+  }
+
+  const openPattern = new RegExp(`<\\s*(?:${tagPattern})\\s*>`, 'i');
+  const openMatch = openPattern.exec(normalizedMessage);
+  if (!openMatch || openMatch.index == null) return '';
+
+  const contentStart = openMatch.index + openMatch[0].length;
+  const remainder = normalizedMessage.slice(contentStart);
+  const nextStructuredTag = remainder.match(/<\s*(?:context|content|options|updatevariable|update)\s*>/i);
+  const closeTag = remainder.match(new RegExp(`<\\/\\s*(?:${tagPattern})\\s*>`, 'i'));
+
+  let contentEnd = remainder.length;
+  if (nextStructuredTag?.index != null) {
+    contentEnd = Math.min(contentEnd, nextStructuredTag.index);
+  }
+  if (closeTag?.index != null) {
+    contentEnd = Math.min(contentEnd, closeTag.index);
+  }
+
+  return remainder.slice(0, contentEnd).trim();
+}
+
+function stripStructuredSections(message: string): string {
+  return message
+    .replace(/<\s*options\s*>[\s\S]*?(?:<\/\s*options\s*>|$)/gi, '')
+    .replace(/<\s*(?:updatevariable|update)\s*>[\s\S]*?(?:<\/\s*(?:updatevariable|update)\s*>|$)/gi, '')
+    .replace(/<\/?\s*(?:context|content)\s*>/gi, '')
+    .trim();
+}
+
+function parseOptionsBlock(block: string): RoleplayOption[] {
+  if (!block.trim()) return [];
+
+  return block
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map((line, index) => {
+      const bracket = line.match(/^[([【](.+?)[)\]】]\s*(.+)$/);
+      if (bracket) {
+        return {
+          id: `opt-dynamic-${index + 1}`,
+          title: bracket[1].trim(),
+          content: bracket[2].trim(),
+        };
+      }
+
+      const colon = line.match(/^(.+?)[:：]\s*(.+)$/);
+      if (colon) {
+        return {
+          id: `opt-dynamic-${index + 1}`,
+          title: colon[1].trim(),
+          content: colon[2].trim(),
+        };
+      }
+
+      const numbered = line.match(/^(?:[-*]|\d+[.)、])\s*(.+)$/);
+      return {
+        id: `opt-dynamic-${index + 1}`,
+        title: `行动 ${index + 1}`,
+        content: (numbered?.[1] ?? line).trim(),
+      };
+    });
+}
+
 function parseNarrativeMessage(message: string) {
   // 预处理思维链标签
   const cleanedMessage = preprocessThinkTags(message);
 
-  // 提取 CONTEXT 和 content
-  const contextMatch = cleanedMessage.match(/<(CONTEXT|content)>([\s\S]*?)<\/(CONTEXT|content)>/);
-  const rawContext = (contextMatch ? contextMatch[2] : cleanedMessage).trim();
+  const rawContext =
+    extractTaggedContent(cleanedMessage, ['context', 'content']) || stripStructuredSections(cleanedMessage);
   // 应用类 Markdown 渲染
-  extractedContext.value = renderSimpleMarkdown(rawContext);
+  extractedContext.value = renderSimpleMarkdown(rawContext || EMPTY_NARRATIVE_TEXT);
 
-  // 提取 OPTIONS
-  const optionsMatch = cleanedMessage.match(/<OPTIONS>([\s\S]*?)<\/OPTIONS>/);
-  if (optionsMatch) {
-    const lines = optionsMatch[1]
-      .trim()
-      .split('\n')
-      .filter(l => l.trim());
-    options.value = lines.map((line, idx) => {
-      const parts = line.match(/^[([【](.+?)[)\]】]\s*(.+)/);
-      return {
-        id: `opt-dynamic-${idx + 1}`,
-        title: parts ? parts[1] : `行动 ${idx + 1}`,
-        content: parts ? parts[2] : line.trim(),
-      };
-    });
-  }
+  const parsedOptions = parseOptionsBlock(extractTaggedContent(cleanedMessage, ['options']));
+  options.value = parsedOptions.length > 0 ? parsedOptions : [...FALLBACK_OPTIONS];
 
   // 提取 UpdateVariable
-  const varMatch = cleanedMessage.match(/<UpdateVariable>([\s\S]*?)<\/UpdateVariable>/i);
-  extractedVariables.value = varMatch ? varMatch[1].trim() : '';
+  extractedVariables.value = extractTaggedContent(cleanedMessage, ['updatevariable', 'update']);
 
-  rawCurrentMessage.value = extractedContext.value;
+  rawCurrentMessage.value = extractedContext.value || EMPTY_NARRATIVE_TEXT;
 }
 
 const tabs: { key: FeatureTabKey; label: string }[] = [
@@ -1457,8 +1558,13 @@ async function toggleFullscreen(): Promise<void> {
   }
 }
 
+function onFullscreenChange(): void {
+  isFullscreen.value = Boolean(document.fullscreenElement);
+}
+
 function handleStart(): void {
   isSplashScreenVisible.value = false;
+  saveCurrentChatUiState({ hasStarted: true });
 }
 
 function openFeatureModal(tab: FeatureTabKey): void {
@@ -1535,6 +1641,10 @@ watch(
   { deep: true },
 );
 
+watch(isSplashScreenVisible, hidden => {
+  saveCurrentChatUiState({ hasStarted: !hidden });
+});
+
 watch(
   () => [rawCurrentMessage.value, settings.value.displayMode, settings.value.reduceMotion],
   () => {
@@ -1567,6 +1677,7 @@ onMounted(() => {
   document.title = '点兔文字交互界面';
   upsertMetaDescription('高沉浸文字互动体验，支持选项驱动叙事与世界书联动。');
   document.addEventListener('keydown', onGlobalKeydown);
+  document.addEventListener('fullscreenchange', onFullscreenChange);
   window.addEventListener('mousemove', onShopPopularityDragMove);
   window.addEventListener('mouseup', onShopPopularityDragEnd);
   window.addEventListener('touchmove', onShopPopularityDragMove);
@@ -1600,6 +1711,7 @@ onMounted(() => {
 
   eventStops.push(
     eventOn(tavern_events.CHAT_CHANGED, () => {
+      hydrateUiStateForCurrentChat();
       void initializeForCurrentChat();
       toastr.info('检测到聊天切换，界面数据已自动同步。');
     }).stop,
@@ -1615,6 +1727,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   clearTypewriterTimer();
   document.removeEventListener('keydown', onGlobalKeydown);
+  document.removeEventListener('fullscreenchange', onFullscreenChange);
   eventStops.forEach(stop => stop());
   window.removeEventListener('mousemove', onShopPopularityDragMove);
   window.removeEventListener('mouseup', onShopPopularityDragEnd);
