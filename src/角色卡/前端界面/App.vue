@@ -922,9 +922,9 @@ function renderSimpleMarkdown(text: string): string {
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       // *斜体* → <em>斜体</em>
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    // 美化中英文引号："text" → 「text」、'text' → 『text』
-    //.replace(/"([^&]+)"/g, '「$1」')
-    //.replace(/'([^&#]+)'/g, '『$1』')
+      // 美化中英文引号："text" → 「text」、'text' → 『text』
+      .replace(/"([^&]+)"/g, '<span style="color: --clr-cocoa">「$1」</span>')
+      .replace(/'([^&#]+)'/g, '<span style="color: --clr-chino">『$1』</span>')
   );
 }
 
@@ -958,7 +958,7 @@ function parseNarrativeMessage(message: string) {
   // 预处理思维链标签
   const cleanedMessage = preprocessThinkTags(message);
 
-  // 提取 CONTEXT
+  // 提取 CONTEXT 和 content
   const contextMatch = cleanedMessage.match(/<(CONTEXT|content)>([\s\S]*?)<\/(CONTEXT|content)>/);
   const rawContext = (contextMatch ? contextMatch[2] : cleanedMessage).trim();
   // 应用类 Markdown 渲染
