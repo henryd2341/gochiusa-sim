@@ -977,21 +977,26 @@ function renderSimpleMarkdown(text: string): string {
  * 预处理思维链标签，移除 </think> 或 </thinking> 之前的所有内容
  */
 function preprocessThinkTags(message: string): string {
-  // 匹配 </think> 或 </thinking> 闭合标签
-  const closeTagPattern = /<\/think.*>/i;
-  const closeMatch = message.match(closeTagPattern);
+  const closeTagPattern = /<\/(?:think|thinking)\s*>/gi;
+  let closeMatch = closeTagPattern.exec(message);
+  let lastCloseMatch: RegExpExecArray | null = null;
 
-  if (closeMatch) {
-    // 找到闭合标签的位置，返回该标签之后的内容
-    const endIndex = closeMatch.index! + closeMatch[0].length;
+  while (closeMatch) {
+    lastCloseMatch = closeMatch;
+    closeMatch = closeTagPattern.exec(message);
+  }
+
+  if (lastCloseMatch?.index != null) {
+    // 只截断到真实的闭合标签，避免吞掉紧随其后的 <content> 等结构标签
+    const endIndex = lastCloseMatch.index + lastCloseMatch[0].length;
     return message.slice(endIndex);
   }
 
   // 如果没有找到闭合标签，检查是否有未闭合的 <think> 或 <thinking> 标签
-  const openTagPattern = /<(think|thinking)>/i;
-  const openMatch = message.match(openTagPattern);
+  const openTagPattern = /<\s*(?:think|thinking)\s*>/i;
+  const openMatch = openTagPattern.exec(message);
 
-  if (openMatch) {
+  if (openMatch?.index != null) {
     // 找到开始标签的位置，返回该标签之前的内容
     return message.slice(0, openMatch.index);
   }
@@ -1030,6 +1035,8 @@ function extractTaggedContent(message: string, tagNames: string[]): string {
 
 function stripStructuredSections(message: string): string {
   return message
+    .replace(/<\s*(?:think|thinking)\s*>[\s\S]*?(?:<\/\s*(?:think|thinking)\s*>|$)/gi, '')
+    .replace(/<\/\s*(?:think|thinking)\s*>/gi, '')
     .replace(/<\s*options\s*>[\s\S]*?(?:<\/\s*options\s*>|$)/gi, '')
     .replace(/<\s*(?:updatevariable|update)\s*>[\s\S]*?(?:<\/\s*(?:updatevariable|update)\s*>|$)/gi, '')
     .replace(/<\/?\s*(?:context|content)\s*>/gi, '')
