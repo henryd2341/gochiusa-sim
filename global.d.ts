@@ -14,6 +14,14 @@ declare module '*.md' {
   const content: string;
   export default content;
 }
+declare module '*.yaml' {
+  const content: unknown;
+  export default content;
+}
+declare module '*.yml' {
+  const content: unknown;
+  export default content;
+}
 declare module '*.css' {
   const content: unknown;
   export default content;
@@ -34,5 +42,7 @@ declare namespace z {
 }
 
 declare module 'https://testingcf.jsdelivr.net/gh/StageDog/tavern_resource/dist/util/mvu_zod.js' {
-  export function registerMvuSchema(schema: z.ZodType<Record<string, any>> | (() => z.ZodType<Record<string, any>>)): void;
+  export function registerMvuSchema(
+    schema: z.ZodType<Record<string, any>> | (() => z.ZodType<Record<string, any>>),
+  ): void;
 }

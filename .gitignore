@@ -12,5 +12,10 @@ pnpm-debug.log*
 auto-imports.d.ts
 components.d.ts
 
+.legacy/*
+.limcode/*
+resources/*
+screenshots/*
+plans/*
 dist/*
 .png
