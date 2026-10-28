@@ -6,6 +6,7 @@ declare module '*?url' {
   const content: string;
   export default content;
 }
+<<<<<<< HEAD
 declare module '*.html' {
   const content: string;
   export default content;
@@ -22,8 +23,22 @@ declare module '*.yml' {
   const content: unknown;
   export default content;
 }
+=======
+>>>>>>> 86263ac33d811f0fc3d2e7860c0b19039a9f4515
 declare module '*.css' {
   const content: unknown;
+  export default content;
+}
+declare module '*.html' {
+  const content: string;
+  export default content;
+}
+declare module '*.md' {
+  const content: string;
+  export default content;
+}
+declare module '*.yaml' {
+  const content: any;
   export default content;
 }
 declare module '*.vue' {
